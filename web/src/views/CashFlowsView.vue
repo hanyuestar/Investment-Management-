@@ -3,7 +3,7 @@
     <div class="page-head">
       <div>
         <h2>出入金</h2>
-        <div class="sub">账户级本金搬运，与收益口径完全分离，不参与任何盈亏计算</div>
+        <div class="sub">本金搬运本身不产生盈亏；但计入账户现金与累计投入，并作为 XIRR 的外部现金流</div>
       </div>
       <div class="actions">
         <el-button type="primary" @click="ops.addCash()">+ 登记出入金</el-button>

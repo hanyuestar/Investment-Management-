@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS benchmark (
   UNIQUE(user_id, code, date)
 );
 
--- 出入金（账户级本金搬运）
+-- 出入金（账户级本金搬运；计入账户现金与累计投入，并作为 XIRR 外部现金流）
 CREATE TABLE IF NOT EXISTS cash_flow (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id        INTEGER NOT NULL REFERENCES user(id) ON DELETE CASCADE,

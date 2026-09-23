@@ -374,7 +374,7 @@ test('股票不能设定投计划', async () => {
   assert.equal(r.status, 400);
 });
 
-test('出入金：入金 5 万、出金 2 万 → 净入金 3 万，且不影响收益', async () => {
+test('出入金：入金 5 万、出金 2 万 → 净入金 3 万（本金搬运本身不生盈亏）', async () => {
   await api('POST', '/api/cashflows', aliceToken, { accountId: alice.bank, date: daysAgo(20), kind: 'deposit', amount: 50000 });
   await api('POST', '/api/cashflows', aliceToken, { accountId: alice.bank, date: daysAgo(10), kind: 'withdraw', amount: 20000 });
   const r = await api('GET', '/api/compute', aliceToken);
