@@ -1,5 +1,9 @@
 # 投资管家 · 个人投资资产管理系统 v4.0
 
+[![License: MIT + Attribution](https://img.shields.io/badge/License-MIT%20%2B%20Attribution-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fhanyuestar%2Finvestment--management-blue?logo=docker)](https://github.com/hanyuestar/Investment-Management-/pkgs/container/investment-management)
+[![Version](https://img.shields.io/badge/version-v1.0.0-green.svg)](https://github.com/hanyuestar/Investment-Management-/releases)
+
 一个自托管的**个人多币种投资资产管理系统**：管理 A 股 / 美股 / 基金 / 理财 / 债券的账户、持仓、交易流水、定投、出入金，按发生日锁定汇率，服务端实时计算成本、盈亏、XIRR / TWR、资产配置、集中度、分红税与资本利得估算，并提供月末快照、基准对比、备份导入导出与多用户管理后台。
 
 > 纯本地 / 私有部署，数据保存在你自己的 SQLite 数据库文件中。**所有税务、再平衡内容仅为辅助估算，不构成投资或税务建议。**
@@ -80,6 +84,7 @@
 ```
 Investment Management/
 ├── README.md                  # 本文件
+├── LICENSE                    # MIT License + 附加署名条款（使用者与 Fork 须保留原作者署名）
 ├── Dockerfile                 # 多阶段：构建前端 → 后端运行，静态资源由 Express 托管
 ├── docker-compose.yml         # 一条命令起服务，挂载 ./data，含健康检查
 ├── .env.example               # 环境变量模板（端口/JWT/管理员/汇率源/SMTP/时区）
@@ -236,4 +241,32 @@ npm test                   # = calc.test.js（16 场景 49 断言）+ node --tes
 
 ## 九、许可
 
-私有项目，默认保留所有权利。如需开源，请自行补充 LICENSE 文件。
+本项目由 **hanyuestar 独立设计并开发**，现已开源，采用 **[MIT License](LICENSE) + 附加署名条款**。
+
+| 项 | 说明 |
+|---|---|
+| 协议 | MIT License（允许自由使用、修改、分发、商用、再许可） |
+| **附加条款** | **使用者与 Fork／衍生分支必须完整保留原作者署名**，不得移除、遮盖、替换或伪造 |
+| 修改后分发 | 须注明「基于 hanyuestar/Investment-Management- 修改」，并不得暗示为原作者官方版本 |
+| 完整条款 | 见仓库根目录 [**LICENSE**](LICENSE)（含附加署名条款全文与免责声明） |
+
+**一句话**：随便用、随便改、可商用，**但请保留我的名字**。
+
+### 第三方组件
+
+使用了以下开源组件，著作权归各自作者，均按其自身许可授权（详见 [LICENSE](LICENSE) 第三节）：
+
+- **MIT**：Vue 3、Vue Router、Pinia、Element Plus、@element-plus/icons-vue、Vite、Express、better-sqlite3、bcryptjs、jsonwebtoken
+- **Apache-2.0**：ECharts
+- **MIT-0**：nodemailer ｜ **ISC**：node-cron
+
+### 免责声明
+
+本软件按「原样」提供，不含任何担保。**税务估算、再平衡建议、绩效指标、预警等均为辅助计算，不构成投资、税务或财务建议**；行情与基准点位需手工维护。使用者应自行核对数据，并自行承担投资决策与申报结果。
+
+### 合作与联系
+
+- **合作意向 / 定制开发 / 商务授权 / 许可条款澄清**：hanyueppy@foxmail.com
+- 问题反馈与功能建议：[GitHub Issues](https://github.com/hanyuestar/Investment-Management-/issues)
+
+> 本项目允许自由使用与商用，唯一硬性要求是**保留原作者署名**。感谢尊重。

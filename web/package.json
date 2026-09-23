@@ -3,6 +3,7 @@
   "version": "4.0.0",
   "private": true,
   "description": "个人投资资产管理系统 · 前端（Vue3 + Vite + Element Plus + ECharts）",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "scripts": {
     "dev": "vite",
