@@ -10,15 +10,16 @@
     <div class="grid-sidebar">
       <div class="card">
         <h3>月末快照（TWR / 基准曲线 / 含浮动收益的输入）</h3>
+        <div class="sub">填<b>月末持仓市值</b>（不含账户现金）：月度浮动收益 = 快照差 − 当月证券净投入（买卖/申赎）</div>
         <div class="toolbar">
           <el-date-picker v-model="snap.month" type="month" value-format="YYYY-MM" placeholder="月份" size="small" style="width:130px" />
-          <el-input-number v-model="snap.total" :min="0" :precision="2" size="small" controls-position="right" style="width:180px" placeholder="月末总资产" />
-          <el-button size="small" @click="fillCurrent">填入当前总资产</el-button>
+          <el-input-number v-model="snap.total" :min="0" :precision="2" size="small" controls-position="right" style="width:180px" placeholder="月末持仓市值" />
+          <el-button size="small" @click="fillCurrent">填入当前持仓市值</el-button>
           <el-button size="small" type="primary" @click="saveSnap">保存快照</el-button>
         </div>
         <el-table :data="store.snapshots" size="small" max-height="340" empty-text="暂无快照">
           <el-table-column prop="month" label="月份" width="120" />
-          <el-table-column label="月末总资产 (CNY)" align="right">
+          <el-table-column label="月末持仓市值 (CNY)" align="right">
             <template #default="{ row }">¥{{ money(row.total) }}</template>
           </el-table-column>
           <el-table-column label="操作" width="90" align="right">
@@ -108,7 +109,7 @@ function fillCurrent() {
   snap.total = Math.round((store.kpis.total || 0) * 100) / 100;
 }
 async function saveSnap() {
-  if (!snap.month || !(snap.total >= 0)) return ElMessage.warning('请选择月份并填写总资产');
+  if (!snap.month || !(snap.total >= 0)) return ElMessage.warning('请选择月份并填写月末持仓市值');
   await snapshotsApi.save({ ...snap });
   ElMessage.success('快照已保存');
   snap.total = null;

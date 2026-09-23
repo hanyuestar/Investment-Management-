@@ -34,7 +34,7 @@ function computeAll(userId, accountId) {
   const days = Calc.holdingDays(S, opts);
   const xirr = Calc.portfolioXirr(S, opts);
   const twr = Calc.twr(S, opts);
-  const simpleAnn = Calc.annualized(s.rate, days);
+  const simpleAnn = Calc.annualized(s.accountRate, days);   // 与累计收益率（账户口径）配对
   const bm = Calc.benchmark(S, S.benchSeries, opts);
   const alloc = Calc.allocation(S, settings.allocTargets, opts);
   const concentration = Calc.concentration(S, { ...opts, warnSingle: settings.warnSingle, warnTop5: settings.warnTop5 });
@@ -42,7 +42,7 @@ function computeAll(userId, accountId) {
   const tax = Calc.taxEstimate(S, settings.taxRules, opts);
   const months = Calc.monthRows(S, opts);
   const years = Calc.yearRows(S, opts);
-  const cash = Calc.cashFlowSummary(S, opts);
+  const cash = Calc.accountCash(S, opts);
   const accounts = Calc.accountSummary(S2);
   const aggregation = Calc.securityAggregation(S2);
 
@@ -54,26 +54,42 @@ function computeAll(userId, accountId) {
     return { market: mk, year: y, gain, tax: round2(Math.max(0, gain) * rate) };
   }));
 
-  // 本年收益（有快照用含浮动，否则用已实现）
+  // 本年收益 = 全年已实现 + 全年浮动（有快照时）；无快照时仅已实现
   const nowYear = Calc.TODAY().slice(0, 4);
   const yRow = years.find(y => y.year === nowYear);
-  const yearProfit = yRow ? (yRow.hasF ? yRow.floatTotal : yRow.real) : null;
+  const yearProfit = yRow ? (yRow.hasF ? yRow.total : yRow.real) : null;
+  const yearReal = yRow ? yRow.real : null;
 
   const holdings = s.rows.map(({ a, r, mv, profit }) => ({ asset: a, calc: r, mvCNY: mv, profitCNY: profit }));
 
   const kpis = {
-    total: s.total,
-    invest: s.invest,
-    profit: s.profit,
-    simpleRate: s.rate,
-    xirr: pct(xirr),
-    holdingDays: days,
+    /* ── 账户口径（回答「我到底赚了多少」）── */
+    totalAssets: s.totalAssets,          // 总资产 = 持仓市值 + 现金
+    cash: s.cash,                        // 账户现金余额
+    invest: s.invest,                    // 累计投入本金 = 净入金 + 期初建仓本金（可增可减）
+    netDeposit: s.netDeposit,            // 净入金 = 入金 − 出金
+    openingCost: s.openingCost,          // 期初建仓本金
+    profitAccount: s.profitAccount,      // 账户口径累计收益 = 总资产 − 累计投入本金
+    accountRate: s.accountRate,          // 账户口径收益率
+    /* ── 持仓口径（衡量投资能力，与 XIRR/TWR 同源）── */
+    total: s.total,                      // 持仓市值（兼容旧字段名）
+    profit: s.profitInvest,              // 持仓口径累计收益（兼容旧字段名）
+    profitInvest: s.profitInvest,
     real: s.real,
     unreal: s.unreal,
+    cashIncome: s.cashIncome,
+    netInvest: s.netInvest,              // 证券净投入（可增可减）
+    buyTotal: s.buyTotal,                // 累计买入/申购（仅展示）
+    /* ── 绩效 ── */
+    simpleRate: s.accountRate,           // 与「累计投入本金」配对
+    investRate: s.rate,                  // 持仓口径收益率（分母 = 证券净投入）
+    xirr: pct(xirr),
+    holdingDays: days,
     twr: pct(twr),
     alpha: bm && bm.alpha != null ? bm.alpha : null,
     benchmarkCode: settings.benchmarkCode,
     yearProfit,
+    yearReal,
     fxCurrent: Calc.currentFx(S),
   };
 
@@ -85,8 +101,12 @@ function computeAll(userId, accountId) {
     aggregation,
     performance: {
       xirr: pct(xirr), twr: pct(twr), simpleAnnualized: pct(simpleAnn),
-      cumulativeRate: s.rate, holdingDays: days,
-      real: s.real, unreal: s.unreal, profit: s.profit, invest: s.invest,
+      cumulativeRate: s.accountRate, holdingDays: days,
+      real: s.real, unreal: s.unreal,
+      profit: s.profitInvest, profitInvest: s.profitInvest, profitAccount: s.profitAccount,
+      invest: s.invest, netDeposit: s.netDeposit, openingCost: s.openingCost,
+      netInvest: s.netInvest, buyTotal: s.buyTotal,
+      totalAssets: s.totalAssets, mv: s.total, cash: s.cash,
     },
     benchmark: bm,
     allocation: alloc,

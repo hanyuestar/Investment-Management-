@@ -55,7 +55,20 @@
             <el-radio-button label="income">收益(利息/分红)</el-radio-button>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="金额(原币)" required>
+        <template v-if="form.kind === 'invest' || form.kind === 'redeem'">
+          <el-form-item label="份额" required>
+            <el-input-number v-model="form.qty" :min="0" :precision="4" controls-position="right" style="width:200px" />
+            <span class="form-tip" style="margin-left:8px">当前净值 {{ asset.unitPrice || '—' }}</span>
+          </el-form-item>
+          <el-form-item label="单位净值" required>
+            <el-input-number v-model="form.price" :min="0" :precision="6" controls-position="right" style="width:200px" />
+            <span class="form-tip" style="margin-left:8px">原币/份，申购赎回按当时净值</span>
+          </el-form-item>
+          <el-form-item label="金额合计">
+            <span class="form-tip">{{ computedAmount }}（= 份额 × 单位净值，由系统计算）</span>
+          </el-form-item>
+        </template>
+        <el-form-item v-else label="金额(原币)" required>
           <el-input-number v-model="form.amount" :min="0" :precision="2" controls-position="right" style="width:240px" />
         </el-form-item>
       </template>
@@ -93,6 +106,12 @@ const form = reactive({});
 const assetLabel = computed(() =>
   `${props.asset.name}（${TYPE_LABEL[props.asset.type]}${props.asset.market ? '·' + MARKET_LABEL[props.asset.market] : ''}·${props.asset.currency}）`);
 const title = computed(() => `${props.event ? '编辑' : '新增'}流水 · ${props.asset.name}`);
+const isFlowShare = computed(() =>
+  props.asset?.type !== 'stock' && (form.kind === 'invest' || form.kind === 'redeem'));
+const computedAmount = computed(() => {
+  const v = (+form.qty || 0) * (+form.price || 0);
+  return v > 0 ? v.toFixed(2) : '—';
+});
 
 async function reset() {
   if (props.event) {
@@ -118,6 +137,12 @@ watch(() => props.modelValue, v => { if (v) reset(); }, { immediate: true });
 async function save() {
   const payload = { assetId: props.asset.id, ...form };
   if (!payload.date) return ElMessage.warning('请选择日期');
+  /* v5：非股票申购/赎回必须填份额与单位净值（金额由后端按 份额×净值 计算） */
+  if (isFlowShare.value) {
+    if (!(+payload.qty > 0)) return ElMessage.warning('请填写份额（申购/赎回必须填写份额）');
+    if (!(+payload.price > 0)) return ElMessage.warning('请填写单位净值');
+    payload.amount = undefined;
+  }
   saving.value = true;
   try {
     if (props.event) await eventsApi.update(props.event.id, payload);

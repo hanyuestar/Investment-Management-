@@ -9,8 +9,8 @@ const { currentFx } = require('../services/fx');
 const router = express.Router();
 router.use(authRequired);
 
-const STOCK_SIDES = ['buy', 'sell', 'div', 'bonus', 'split'];
-const FLOW_KINDS = ['invest', 'redeem', 'income'];
+const STOCK_SIDES = ['buy', 'sell', 'div', 'bonus', 'split', 'opening'];
+const FLOW_KINDS = ['invest', 'redeem', 'income', 'opening'];
 
 function mapRow(e) {
   return {
@@ -37,7 +37,13 @@ function normalize(body, asset) {
   const v = { date, fee, fx, note: String(body.note || ''), isT: body.isT ? 1 : 0 };
   if (isStock) {
     v.kind = type; v.side = type;
-    if (type === 'buy' || type === 'sell') {
+    if (type === 'opening') {
+      /* 期初建仓：记账开始前已持有的股数 + 成本单价（不产生现金流） */
+      const qty = Number(body.qty), price = Number(body.price);
+      if (!(qty > 0)) return { error: '期初份额需大于 0' };
+      if (!(price >= 0)) return { error: '期初成本单价需 ≥ 0' };
+      v.qty = qty; v.price = price; v.amount = +(qty * price).toFixed(2);
+    } else if (type === 'buy' || type === 'sell') {
       const qty = Number(body.qty), price = Number(body.price);
       if (!(qty > 0) || !(price > 0)) return { error: '数量与成交价需大于 0' };
       v.qty = qty; v.price = price;
@@ -55,9 +61,29 @@ function normalize(body, asset) {
       v.ratio = ratio;
     }
   } else {
-    const amount = Number(body.amount);
-    if (!(amount > 0)) return { error: '金额需大于 0' };
-    v.kind = type; v.side = null; v.amount = amount;
+    v.kind = type; v.side = null;
+    if (type === 'opening') {
+      /* 期初建仓：期初份额 + 成本单价 */
+      const qty = Number(body.qty), price = Number(body.price);
+      if (!(qty > 0)) return { error: '期初份额需大于 0' };
+      if (!(price >= 0)) return { error: '期初成本单价需 ≥ 0' };
+      v.qty = qty; v.price = price; v.amount = +(qty * price).toFixed(2);
+    } else if (type === 'invest' || type === 'redeem') {
+      /* v5：申购 / 赎回必须填份额；单位净值缺省时可由金额反推，金额以「份额 × 净值」为准 */
+      const qty = Number(body.qty);
+      if (!(qty > 0)) return { error: '份额需大于 0（申购/赎回必须填写份额）' };
+      let price = Number(body.price);
+      if (!(price > 0)) {
+        const amt = Number(body.amount);
+        if (amt > 0) price = amt / qty;
+        else return { error: '请填写单位净值（或金额）' };
+      }
+      v.qty = qty; v.price = price; v.amount = +(qty * price).toFixed(2);
+    } else {
+      const amount = Number(body.amount);
+      if (!(amount > 0)) return { error: '金额需大于 0' };
+      v.amount = amount;
+    }
   }
   return { value: v };
 }

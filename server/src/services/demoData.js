@@ -10,8 +10,8 @@ function loadDemoData(db, userId) {
   const insAccount = db.prepare(`INSERT INTO account (id,user_id,name,kind,currency,note,created_at)
     VALUES (?,?,?,?,?,?,?)`);
   const insAsset = db.prepare(`INSERT INTO asset
-    (id,user_id,account_id,name,code,market,type,currency,price,market_value,alerts_json,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`);
+    (id,user_id,account_id,name,code,market,type,currency,price,market_value,unit_price,alerts_json,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
   const insEvent = db.prepare(`INSERT INTO event
     (id,user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
@@ -47,13 +47,14 @@ function loadDemoData(db, userId) {
     insAccount.run(2, userId, '招商银行', 'bank', 'CNY', '理财/债券', ts);
     insAccount.run(3, userId, '富途证券', 'broker', 'USD', '美股账户', ts);
 
-    // 资产
-    insAsset.run(1, userId, 1, '贵州茅台', '600519', 'CN', 'stock', 'CNY', 1330, 0,
+    // 资产（v5：非股票引入「单位净值」，市值 = 份额 × 单位净值；见下方事件中的份额）
+    insAsset.run(1, userId, 1, '贵州茅台', '600519', 'CN', 'stock', 'CNY', 1330, 0, 0,
       JSON.stringify({ takeProfitPrice: 1450, stopLossPrice: 1100 }), ts);
-    insAsset.run(2, userId, 2, '宁德时代', '300750', 'CN', 'stock', 'CNY', 210, 0, null, ts);
-    insAsset.run(3, userId, 3, '标普500 ETF', 'VOO', 'US', 'fund', 'USD', 0, 8600, null, ts);
-    insAsset.run(4, userId, 2, '招银理财·稳健', '', '', 'wealth', 'CNY', 0, 51000, null, ts);
-    insAsset.run(5, userId, 2, '国债2401', '', '', 'bond', 'CNY', 0, 20300, null, ts);
+    insAsset.run(2, userId, 2, '宁德时代', '300750', 'CN', 'stock', 'CNY', 210, 0, 0, null, ts);
+    // 购入时净值 1.00（份额=金额）；当前净值 = 市值 / 累计份额
+    insAsset.run(3, userId, 3, '标普500 ETF', 'VOO', 'US', 'fund', 'USD', 0, 8600, 8600 / 8000, null, ts);
+    insAsset.run(4, userId, 2, '招银理财·稳健', '', '', 'wealth', 'CNY', 0, 51000, 51000 / 50000, null, ts);
+    insAsset.run(5, userId, 2, '国债2401', '', '', 'bond', 'CNY', 0, 20300, 20300 / 20000, null, ts);
 
     // 事件
     let eid = 0;
@@ -67,12 +68,13 @@ function loadDemoData(db, userId) {
     E(1, '2026-07-10', 'bonus', 'bonus', { qty: 20, note: '10送2' });
     E(1, '2026-08-15', 'buy', 'buy', { qty: 100, price: 1400, fee: 15, note: '回调买入' });
     E(2, '2026-05-08', 'buy', 'buy', { qty: 200, price: 180, fee: 20, note: '买入' });
-    E(3, '2026-01-15', 'invest', null, { amount: 5000, fx: 7.10, note: '美股权重' });
-    E(3, '2026-07-15', 'invest', null, { amount: 3000, fx: 7.28, note: '加仓' });
+    // 非股票：申购/赎回带份额（净值 1.00），金额保持与原演示数据一致
+    E(3, '2026-01-15', 'invest', null, { qty: 5000, price: 1, amount: 5000, fx: 7.10, note: '美股权重' });
+    E(3, '2026-07-15', 'invest', null, { qty: 3000, price: 1, amount: 3000, fx: 7.28, note: '加仓' });
     E(3, '2026-08-01', 'income', null, { amount: 60, fx: 7.28, note: '分红' });
-    E(4, '2026-01-20', 'invest', null, { amount: 50000, note: '' });
+    E(4, '2026-01-20', 'invest', null, { qty: 50000, price: 1, amount: 50000, note: '' });
     E(4, '2026-06-20', 'income', null, { amount: 1200, note: '半年利息' });
-    E(5, '2026-04-01', 'invest', null, { amount: 20000, note: '' });
+    E(5, '2026-04-01', 'invest', null, { qty: 20000, price: 1, amount: 20000, note: '' });
 
     // 月末快照
     const snaps = [['2026-01', 86000], ['2026-02', 237000], ['2026-03', 236500], ['2026-04', 246000],
@@ -84,11 +86,12 @@ function loadDemoData(db, userId) {
       ['2026-05', 4180], ['2026-06', 4090], ['2026-07', 4260], ['2026-08', 4430]];
     bench.forEach(([m, v]) => insBench.run(userId, 'CSI300', m, v));
 
-    // 出入金
+    // 出入金（v5：现金口径要求入金足以覆盖买入/申购支出，故券商入金由 30 万调为 34 万，
+    //          使账户现金为正值；不影响收益口径——追加本金会同等计入累计投入）
     let cid = 0;
     const C = (accountId, date, kind, amount, fx, note) =>
       insCash.run(++cid, userId, accountId, date, kind, amount, fx, note);
-    C(1, '2026-02-01', 'deposit', 300000, 1, '券商入金');
+    C(1, '2026-02-01', 'deposit', 340000, 1, '券商入金');
     C(2, '2026-01-15', 'deposit', 90000, 1, '银行入金');
     C(2, '2026-05-01', 'withdraw', 20000, 1, '取现');
     C(3, '2026-01-10', 'deposit', 8000, 7.10, '美元入金');

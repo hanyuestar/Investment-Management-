@@ -86,16 +86,21 @@ router.post('/:id/generate', asyncHandler(async (req, res) => {
   const existsStmt = db.prepare('SELECT id FROM event WHERE asset_id=? AND date=? AND kind=\'invest\'');
   const insert = db.prepare(`INSERT INTO event
     (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
-    VALUES (?,?,?,?,NULL,NULL,NULL,?,NULL,0,?,0,?,?)`);
+    VALUES (?,?,?,?,NULL,?,?,?,NULL,0,?,0,?,?)`);
+
+  /* v5：非股票申购必须带份额。定投按资产当前单位净值折算份额（净值缺省 1），
+     保证「份额 × 净值 = 金额」自洽。 */
+  const nav = +asset.unit_price > 0 ? +asset.unit_price : 1;
 
   const inserted = [], skipped = [];
   const tx = db.transaction(() => {
     for (const r of rows) {
       if (existsStmt.get(asset.id, r.date)) { skipped.push(r.date); continue; }
       const fx = asset.currency === 'USD' ? currentFx(r.date) : 1;
-      const info = insert.run(req.user.id, asset.id, r.date, 'invest', r.amount, fx,
+      const qty = +((+r.amount || 0) / nav).toFixed(6);
+      const info = insert.run(req.user.id, asset.id, r.date, 'invest', qty, nav, r.amount, fx,
         r.note || plan.note || '定投', now());
-      inserted.push({ id: String(info.lastInsertRowid), date: r.date, amount: r.amount, fx });
+      inserted.push({ id: String(info.lastInsertRowid), date: r.date, amount: r.amount, qty, fx });
     }
   });
   tx();

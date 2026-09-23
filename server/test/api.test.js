@@ -166,13 +166,13 @@ test('创建股票与现金流型资产，校验股票必须选市场', async ()
   assert.equal(r.status, 400);
 
   r = await api('POST', '/api/assets', aliceToken, {
-    name: '测试理财', type: 'wealth', currency: 'CNY', accountId: alice.bank, marketValue: 10000,
+    name: '测试理财', type: 'wealth', currency: 'CNY', accountId: alice.bank, unitPrice: 1, marketValue: 10000,
   });
   assert.equal(r.status, 201);
   alice.wealth = r.json.id;
 
   r = await api('POST', '/api/assets', aliceToken, {
-    name: '美元基金', type: 'fund', currency: 'USD', accountId: alice.usBroker, marketValue: 0,
+    name: '美元基金', type: 'fund', currency: 'USD', accountId: alice.usBroker, unitPrice: 1, marketValue: 0,
   });
   assert.equal(r.status, 201);
   alice.usFund = r.json.id;
@@ -238,7 +238,7 @@ test('事件校验：数量/价格非法返回 400', async () => {
 
 /* ---------------- 双币种与汇率锁定 ---------------- */
 test('美元资产：历史汇率锁定成本，新增手动汇率不改历史成本', async () => {
-  await api('POST', '/api/events', aliceToken, { assetId: alice.usFund, date: daysAgo(40), kind: 'invest', amount: 1000, fx: 7.1 });
+  await api('POST', '/api/events', aliceToken, { assetId: alice.usFund, date: daysAgo(40), kind: 'invest', qty: 1000, price: 1, amount: 1000, fx: 7.1 });
   let r = await api('GET', '/api/compute', aliceToken);
   let h = r.json.holdings.find(x => x.asset.id === alice.usFund);
   assert.ok(Math.abs(h.calc.investCNY - 7100) < 0.01);
@@ -266,10 +266,10 @@ test('XIRR：一年前投 1000、当前市值 1100 → 年化约 10%（独立账
   const acc = await api('POST', '/api/accounts', aliceToken, { name: 'XIRR账户', kind: 'bank', currency: 'CNY' });
   const accId = acc.json.id;
   let r = await api('POST', '/api/assets', aliceToken, {
-    name: 'XIRR理财', type: 'wealth', currency: 'CNY', accountId: accId, marketValue: 1100,
+    name: 'XIRR理财', type: 'wealth', currency: 'CNY', accountId: accId, unitPrice: 1.1, marketValue: 1100,
   });
   const id = r.json.id;
-  await api('POST', '/api/events', aliceToken, { assetId: id, date: daysAgo(365), kind: 'invest', amount: 1000 });
+  await api('POST', '/api/events', aliceToken, { assetId: id, date: daysAgo(365), kind: 'invest', qty: 1000, price: 1, amount: 1000 });
   r = await api('GET', `/api/performance?accountId=${accId}`, aliceToken);
   assert.ok(r.json.xirr != null, 'xirr 不应为 null');
   assert.ok(Math.abs(r.json.xirr - 0.10) < 0.005, `xirr=${r.json.xirr}`);
@@ -280,11 +280,11 @@ test('TWR 与基准对比：两期快照组合 +20%、基准 +10% → α=+10%', 
   let r = await api('POST', '/api/accounts', aliceToken, { name: '绩效账户', kind: 'broker', currency: 'CNY' });
   const accId = r.json.id;
   r = await api('POST', '/api/assets', aliceToken, {
-    name: '绩效理财', type: 'wealth', currency: 'CNY', accountId: accId, marketValue: 12000,
+    name: '绩效理财', type: 'wealth', currency: 'CNY', accountId: accId, unitPrice: 1, marketValue: 12000,
   });
   const assetId = r.json.id;
   // 投入发生在首月之前
-  await api('POST', '/api/events', aliceToken, { assetId, date: daysAgo(75), kind: 'invest', amount: 10000 });
+  await api('POST', '/api/events', aliceToken, { assetId, date: daysAgo(75), kind: 'invest', qty: 10000, price: 1, amount: 10000 });
   await api('POST', '/api/snapshots', aliceToken, { month: prevMonth, total: 10000 });
   await api('POST', '/api/snapshots', aliceToken, { month: lastMonth, total: 12000 });
   await api('POST', '/api/benchmarks', aliceToken, { date: prevMonth, value: 3800 });
@@ -350,7 +350,7 @@ test('止盈预警：现价超过止盈线触发', async () => {
 /* ---------------- 定投 / 出入金 / 快照 ---------------- */
 test('定投计划：创建并生成 3 期投入记录（幂等）', async () => {
   let r = await api('POST', '/api/assets', aliceToken, {
-    name: '定投标的', type: 'fund', currency: 'CNY', accountId: alice.bank, marketValue: 0,
+    name: '定投标的', type: 'fund', currency: 'CNY', accountId: alice.bank, unitPrice: 1, marketValue: 0,
   });
   const id = r.json.id;
   const m = curMonth;

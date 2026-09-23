@@ -62,6 +62,7 @@ function buildState(userId) {
     currency: a.currency,
     price: a.price || 0,
     marketValue: a.market_value || 0,
+    unitPrice: a.unit_price || 0,
     alerts: a.alerts_json ? JSON.parse(a.alerts_json) : null,
   }));
 

@@ -129,7 +129,10 @@ function eq(name, got, want, tol = 0.01) {
   const mr = C.monthRows(S);
   const feb = mr.find(x => x.month === '2026-02');
   eq('2月已实现', feb.real, 100, 0.01);
-  eq('2月含浮动', feb.floatTotal, 100 + (12000 - 10000 - (-600)), 0.01); // 净投入=卖出+600
+  /* 规格 §7：含浮动 = 当月已实现 + (快照差 − 当月净投入)。
+     快照为「持仓市值」，卖出/分红不改变它，故此处相加**不构成重复计算**。 */
+  eq('2月纯浮动(快照差−净投入)', feb.pureFloat, 12000 - 10000 - (-600), 0.01); // 净投入=卖出+600
+  eq('2月含浮动(已实现+纯浮动)', feb.floatTotal, 100 + (12000 - 10000 - (-600)), 0.01);
   const yr = C.yearRows(S);
   eq('年度已实现', yr[0].real, 100, 0.01);
 }
@@ -264,6 +267,88 @@ const near = (name, got, want, tol = 0.001) => {
   const r = C.portfolioXirr(S);
   console.log(`${r != null && r > 0 ? '✅' : '❌'} 组合XIRR: ${r == null ? 'null' : (r * 100).toFixed(2) + '%'}`);
   (r != null && r > 0) ? pass++ : fail++;
+}
+
+/* =========================================================
+ * v5 新增口径：期初建仓 / 全类型份额 / 账户现金 / 双口径
+ * ========================================================= */
+{
+  console.log('\n— 场景17 期初建仓（opening）—');
+  const S = {
+    fx: [{ date: '2026-01-01', rate: 7.1, source: 'manual' }], settings: {},
+    accounts: [{ id: 'acc1' }],
+    assets: [{ id: 'f1', accountId: 'acc1', name: '期初基金', type: 'fund', currency: 'CNY', unitPrice: 1.2, marketValue: 0 }],
+    events: [{ assetId: 'f1', date: '2025-06-01', kind: 'opening', qty: 10000, price: 1.0, fx: 1 }],
+    cashFlows: [], snapshots: [],
+  };
+  const r = C.calcAsset(S.assets[0], S);
+  eq('期初份额', r.qty, 10000, 0.001);
+  eq('期初成本(¥)', r.costCNY, 10000, 0.01);
+  eq('单位成本', r.avgCNY, 1, 0.001);
+  eq('市值=份额×净值', r.mvCNY, 12000, 0.01);
+  eq('累计收益(非全额虚增)', r.totalCNY, 2000, 0.01);
+  eq('期初建仓不计入累计买入', r.buyAmtCNY, 0, 0.01);
+  eq('期初建仓计入净投入', r.netInvestCNY, 10000, 0.01);
+  console.log(`✅ 持有天数自期初建仓日算起: ${C.holdingDays(S)} 天`);
+  (C.holdingDays(S) > 400) ? pass++ : fail++;
+
+  console.log('\n— 场景18 非股票份额与成本单价 —');
+  const S2 = {
+    fx: [{ date: '2026-01-01', rate: 7.1, source: 'manual' }], settings: {},
+    accounts: [{ id: 'acc1' }],
+    assets: [{ id: 'f2', accountId: 'acc1', name: '基金', type: 'fund', currency: 'CNY', unitPrice: 1.1, marketValue: 0 }],
+    events: [
+      { assetId: 'f2', date: '2026-01-06', kind: 'invest', qty: 5000, price: 1.0, fee: 0, fx: 1 },
+      { assetId: 'f2', date: '2026-02-10', kind: 'redeem', qty: 2000, price: 1.05, fee: 0, fx: 1 },
+    ],
+    cashFlows: [], snapshots: [],
+  };
+  const r2 = C.calcAsset(S2.assets[0], S2);
+  eq('份额(5000−2000)', r2.qty, 3000, 0.001);
+  eq('持仓成本(5000−2000)', r2.costCNY, 3000, 0.01);
+  eq('单位成本', r2.avgCNY, 1, 0.001);
+  eq('市值(3000×1.1)', r2.mvCNY, 3300, 0.01);
+  eq('已实现(2100−2000)', r2.realCNY, 100, 0.01);
+  eq('总收益(100+300)', r2.totalCNY, 400, 0.01);
+  /* 赎回本金不得计入已实现 */
+  const rm = C.realizedByMonth(S2);
+  eq('月报已实现仅 100（赎回本金 2100 不计入）', rm['2026-02'], 100, 0.01);
+
+  console.log('\n— 场景19 账户现金与双口径 —');
+  const S3 = {
+    fx: [{ date: '2026-01-01', rate: 7.1, source: 'manual' }], settings: {},
+    accounts: [{ id: 'acc1' }],
+    assets: [{ id: 's1', accountId: 'acc1', name: '股票', type: 'stock', currency: 'CNY', price: 12 }],
+    events: [{ assetId: 's1', date: '2026-01-05', side: 'buy', qty: 1000, price: 10, fee: 0, fx: 1 }],
+    cashFlows: [
+      { accountId: 'acc1', date: '2026-01-01', kind: 'deposit', amount: 20000, fx: 1 },
+      { accountId: 'acc1', date: '2026-03-01', kind: 'withdraw', amount: 5000, fx: 1 },
+    ],
+    snapshots: [],
+  };
+  const cf = C.accountCash(S3);
+  eq('现金=入金−出金−买入', cf.cash, 20000 - 5000 - 10000, 0.01);
+  eq('净入金', cf.netDeposit, 15000, 0.01);
+  eq('有效净投入(无期初)', cf.effectiveInvest, 15000, 0.01);
+  const s3 = C.summary(S3);
+  eq('总资产=持仓+现金', s3.totalAssets, 12000 + 5000, 0.01);
+  eq('账户口径收益=总资产−累计投入', s3.profitAccount, 17000 - 15000, 0.01);
+  eq('持仓口径收益(浮动2000)', s3.profitInvest, 2000, 0.01);
+  eq('两口径一致', s3.profitAccount, s3.profitInvest, 0.01);
+
+  console.log('\n— 场景20 累计投入可增可减 —');
+  const S4 = JSON.parse(JSON.stringify(S3));
+  S4.cashFlows.push({ accountId: 'acc1', date: '2026-04-01', kind: 'withdraw', amount: 3000, fx: 1 });
+  eq('再出金 3000 后累计投入下降', C.summary(S4).invest, 12000, 0.01);
+  eq('再出金后现金', C.accountCash(S4).cash, 2000, 0.01);
+  /* 清仓后总资产不再归零（含现金） */
+  const S5 = JSON.parse(JSON.stringify(S3));
+  S5.events.push({ assetId: 's1', date: '2026-06-01', side: 'sell', qty: 1000, price: 12, fee: 0, fx: 1 });
+  const s5 = C.summary(S5);
+  eq('清仓后持仓市值', s5.mv, 0, 0.01);
+  eq('清仓后现金(20000−5000−10000+12000)', s5.cash, 17000, 0.01);
+  eq('清仓后总资产≠0', s5.totalAssets, 17000, 0.01);
+  eq('清仓后账户口径收益', s5.profitAccount, 2000, 0.01);
 }
 
 console.log(`\n===== 结果: ${pass} 通过, ${fail} 失败 =====`);

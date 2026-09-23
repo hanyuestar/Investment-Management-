@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS asset (
   currency     TEXT NOT NULL,                          -- CNY | USD
   price        REAL NOT NULL DEFAULT 0,                -- 股票最新价（原币）
   market_value REAL NOT NULL DEFAULT 0,                -- 非股票当前市值（原币）
+  unit_price   REAL NOT NULL DEFAULT 0,                -- 非股票单位净值/单价（原币；市值 = 份额 × 单位净值）
   alerts_json  TEXT,
   created_at   TEXT NOT NULL
 );
@@ -178,8 +179,92 @@ function init(dbPath) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   db.exec(SCHEMA);
+  migrate();            // 老库补列 + v5 口径迁移
   bootstrapAdmin();
   return db;
+}
+
+/** 幂等补列（老库升级用；新库由 SCHEMA 直接建出） */
+function addColumn(table, col, ddl) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
+  if (!cols.includes(col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+}
+
+function migrate() {
+  addColumn('asset', 'unit_price', 'unit_price REAL NOT NULL DEFAULT 0');
+  migrateV5Caliber();
+}
+
+/** 迁移标记键（写在 system_config，幂等） */
+const MIGRATION_KEY = 'schema_v5_caliber';
+
+/**
+ * v5 口径迁移：让老数据也能用「份额 + 成本」框架计算，且**不产生虚增收益**。
+ *  1) 非股票资产补单位净值：缺省 1（即「1 份 = 1 原币」，份额 = 金额）——这是最常见
+ *     的记账近似；用户可在资产编辑里改成真实净值。
+ *  2) 非股票既有 invest/redeem 事件补 qty = amount / unit_price，使「份额 × 净值 = 金额」自洽。
+ *  3) **无任何事件**却已有市值的资产，补一条 opening（成本 = 当前市值）→ 期初收益为 0，
+ *     不把存量仓位误算成盈利；用户可编辑该事件填入真实成本。
+ *  股票不处理：其买入事件本就带 qty，成本口径未变。
+ */
+function migrateV5Caliber() {
+  if (getConfig(MIGRATION_KEY)) return;
+  const ts = now();
+  const run = db.transaction(() => {
+    db.prepare("UPDATE asset SET unit_price = 1 WHERE type <> 'stock' AND (unit_price IS NULL OR unit_price = 0)").run();
+
+    const assets = db.prepare('SELECT id,user_id,type,unit_price,market_value,currency,created_at FROM asset').all();
+    const selEv = db.prepare('SELECT id,kind,side,qty,amount,ratio FROM event WHERE asset_id=? ORDER BY date, id');
+    const updEv = db.prepare('UPDATE event SET qty=?, price=? WHERE id=?');
+    const updUp = db.prepare('UPDATE asset SET unit_price=? WHERE id=?');
+    const insEv = db.prepare(`INSERT INTO event
+      (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
+      VALUES (?,?,?,?,?,?,?,?,NULL,0,?,0,?,?)`);
+
+    let fixedQty = 0, addedOpening = 0, setNav = 0;
+    for (const a of assets) {
+      if (a.type === 'stock') continue;
+      const up0 = +a.unit_price > 0 ? +a.unit_price : 1;
+      const evs = selEv.all(a.id);
+
+      /* 1) 既有 invest/redeem 事件补份额：qty = 金额 ÷ 净值（净值缺省 1 → 份额 = 金额） */
+      for (const e of evs) {
+        const act = e.side || e.kind;
+        if ((act === 'invest' || act === 'redeem') && !(+e.qty > 0)) {
+          const amt = +e.amount || 0;
+          if (amt > 0) { updEv.run(+(amt / up0).toFixed(6), up0, e.id); fixedQty++; }
+        }
+      }
+
+      /* 2) 无任何事件的期初持仓：补一条 opening（成本 = 当前市值 → 收益为 0，不虚增） */
+      if (evs.length === 0 && +a.market_value > 0) {
+        const mv = +a.market_value, q = +(mv / up0).toFixed(6);
+        const d = String(a.created_at || ts).slice(0, 10);
+        insEv.run(a.user_id, a.id, d, 'opening', null, q, up0, +(q * up0).toFixed(2), 1,
+          '期初建仓（迁移自旧数据，成本按当时市值，可编辑）', ts);
+        addedOpening++;
+      }
+
+      /* 3) 用「市值 ÷ 份额」反推单位净值，**保证迁移后市值不变** */
+      const after = selEv.all(a.id);
+      let q = 0;
+      for (const e of after) {
+        const act = e.side || e.kind, eq = +e.qty || 0;
+        if (act === 'invest' || act === 'opening' || act === 'bonus') q += eq;
+        else if (act === 'redeem' || act === 'sell') q -= eq;
+        else if (act === 'split') q *= (+e.ratio || 1);
+      }
+      if (q > 0 && +a.market_value > 0) {
+        const up = +(+a.market_value / q).toFixed(8);
+        if (Math.abs(up - up0) > 1e-9) { updUp.run(up, a.id); setNav++; }
+      }
+    }
+    setConfig(MIGRATION_KEY, { at: ts, version: 5, fixedQty, addedOpening, setNav });
+    if (fixedQty || addedOpening || setNav) {
+      console.log(`[migrate] v5 口径：补份额 ${fixedQty} 笔，补期初建仓 ${addedOpening} 笔，校正单位净值 ${setNav} 个资产`);
+    }
+  });
+  run();
 }
 
 function getDb() {

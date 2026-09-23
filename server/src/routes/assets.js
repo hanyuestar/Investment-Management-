@@ -1,5 +1,6 @@
 'use strict';
-/** 资产 CRUD。类型/市场/币种/所属账户创建后不可改（避免成本链错乱），仅可改名/代码/现价市值/预警 */
+/** 资产 CRUD。类型/市场/币种/所属账户创建后不可改（避免成本链错乱），仅可改名/代码/现价净值市值/预警。
+ *  v5：非股票引入「单位净值 unitPrice」，市值 = 份额 × 单位净值；创建时可一并录入「期初建仓」。 */
 const express = require('express');
 const { getDb, now } = require('../db');
 const { authRequired } = require('../middleware/auth');
@@ -16,7 +17,7 @@ function mapRow(a) {
   return {
     id: String(a.id), accountId: String(a.account_id), name: a.name, code: a.code || '',
     market: a.market || '', type: a.type, currency: a.currency,
-    price: a.price || 0, marketValue: a.market_value || 0,
+    price: a.price || 0, marketValue: a.market_value || 0, unitPrice: a.unit_price || 0,
     alerts: a.alerts_json ? JSON.parse(a.alerts_json) : null,
     createdAt: a.created_at,
   };
@@ -34,6 +35,23 @@ function validateAlerts(al) {
     out[k] = v;
   }
   return Object.keys(out).length ? out : null;
+}
+
+/** 解析并校验「期初建仓」输入；返回 {qty, price, amount, date} 或错误字符串 */
+function parseOpening(o) {
+  if (!o) return null;
+  const qty = Number(o.qty);
+  if (!(qty > 0)) return '期初份额需大于 0';
+  let price = o.costPrice !== undefined && o.costPrice !== '' ? Number(o.costPrice) : null;
+  let amount = o.amount !== undefined && o.amount !== '' ? Number(o.amount) : null;
+  if (price !== null && !(price >= 0)) return '期初成本单价非法';
+  if (amount !== null && !(amount >= 0)) return '期初投入本金非法';
+  if (price === null && amount === null) return '请填写期初成本单价或期初投入本金';
+  if (price === null) price = amount / qty;              // 由本金反推成本单价
+  if (amount === null) amount = qty * price;
+  const date = String(o.date || '').slice(0, 10) || now().slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return '期初建仓日期格式应为 YYYY-MM-DD';
+  return { qty, price, amount, date };
 }
 
 router.get('/', (req, res) => {
@@ -57,17 +75,38 @@ router.post('/', asyncHandler(async (req, res) => {
     if (!MARKETS.includes(b.market)) return badRequest(res, '股票必须选择市场 A股(CN)/美股(US)');
     market = b.market;
   }
+  const isStock = type === 'stock';
   const price = Number(b.price) || 0;
-  const marketValue = Number(b.marketValue) || 0;
-  if (price < 0 || marketValue < 0) return badRequest(res, '价格/市值不能为负');
+  let unitPrice = Number(b.unitPrice) || 0;
+  let marketValue = Number(b.marketValue) || 0;
+  if (price < 0 || marketValue < 0 || unitPrice < 0) return badRequest(res, '价格/净值/市值不能为负');
+  if (!isStock && !(unitPrice > 0)) {
+    return badRequest(res, '非股票资产必须填写单位净值（市值 = 份额 × 单位净值）');
+  }
+
+  const opening = parseOpening(b.opening);
+  if (typeof opening === 'string') return badRequest(res, opening);
+
+  /* 有期初建仓但未填当前净值/市值时，按成本单价兜底，避免市值算不出来 */
+  if (opening && !isStock && !(unitPrice > 0)) unitPrice = opening.price;
+  if (opening && !isStock && !(marketValue > 0)) marketValue = opening.qty * unitPrice;
 
   const info = getDb().prepare(`INSERT INTO asset
-    (user_id,account_id,name,code,market,type,currency,price,market_value,alerts_json,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)`)
+    (user_id,account_id,name,code,market,type,currency,price,market_value,unit_price,alerts_json,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(req.user.id, account.id, name, String(b.code || ''), market, type, currency,
-      type === 'stock' ? price : 0,
-      type === 'stock' ? 0 : marketValue,
+      isStock ? price : 0,
+      isStock ? 0 : marketValue,
+      isStock ? 0 : unitPrice,
       null, now());
+
+  if (opening) {
+    getDb().prepare(`INSERT INTO event
+      (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
+      VALUES (?,?,?,?,?,?,?,?,NULL,0,1,0,?,?)`)
+      .run(req.user.id, info.lastInsertRowid, opening.date, 'opening', null,
+        opening.qty, opening.price, opening.amount, '期初建仓（录入资产时填写）', now());
+  }
   res.status(201).json(mapRow(ownedRow(getDb(), 'asset', info.lastInsertRowid, req.user.id)));
 }));
 
@@ -78,10 +117,14 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const name = b.name !== undefined ? String(b.name).trim() : row.name;
   if (!name) return badRequest(res, '资产名称不能为空');
   const code = b.code !== undefined ? String(b.code) : row.code;
-  let price = row.price, mv = row.market_value;
+  let price = row.price, mv = row.market_value, up = row.unit_price;
   if (b.price !== undefined) price = Number(b.price) || 0;
   if (b.marketValue !== undefined) mv = Number(b.marketValue) || 0;
-  if (price < 0 || mv < 0) return badRequest(res, '价格/市值不能为负');
+  if (b.unitPrice !== undefined) up = Number(b.unitPrice) || 0;
+  if (price < 0 || mv < 0 || up < 0) return badRequest(res, '价格/净值/市值不能为负');
+  if (row.type !== 'stock' && b.unitPrice !== undefined && !(up > 0)) {
+    return badRequest(res, '非股票资产的单位净值需大于 0');
+  }
 
   let alertsJson = row.alerts_json;
   if (b.alerts !== undefined) {
@@ -90,8 +133,8 @@ router.put('/:id', asyncHandler(async (req, res) => {
     alertsJson = result ? JSON.stringify(result) : null;
   }
 
-  getDb().prepare('UPDATE asset SET name=?,code=?,price=?,market_value=?,alerts_json=? WHERE id=? AND user_id=?')
-    .run(name, code, price, mv, alertsJson, row.id, req.user.id);
+  getDb().prepare('UPDATE asset SET name=?,code=?,price=?,market_value=?,unit_price=?,alerts_json=? WHERE id=? AND user_id=?')
+    .run(name, code, price, mv, up, alertsJson, row.id, req.user.id);
   res.json(mapRow(ownedRow(getDb(), 'asset', row.id, req.user.id)));
 }));
 
