@@ -84,7 +84,8 @@
 ```
 Investment Management/
 ├── README.md                  # 本文件
-├── LICENSE                    # MIT License + 附加署名条款（使用者与 Fork 须保留原作者署名）
+├── LICENSE                    # MIT License
+├── LICENSE-ADDITIONAL.md      # 附加署名条款（使用者与 Fork 须保留原作者署名）+ 第三方组件 + 免责声明
 ├── Dockerfile                 # 多阶段：构建前端 → 后端运行，静态资源由 Express 托管
 ├── docker-compose.yml         # 一条命令起服务，挂载 ./data，含健康检查
 ├── .env.example               # 环境变量模板（端口/JWT/管理员/汇率源/SMTP/时区）
@@ -241,24 +242,23 @@ npm test                   # = calc.test.js（16 场景 49 断言）+ node --tes
 
 ## 九、许可
 
-本项目由 **hanyuestar 独立设计并开发**，现已开源，采用 **[MIT License](LICENSE) + 附加署名条款**。
+本项目由 **hanyuestar 独立设计并开发**，现已开源，采用 **[MIT License](LICENSE) + [附加署名条款](LICENSE-ADDITIONAL.md)**。
 
 | 项 | 说明 |
 |---|---|
-| 协议 | MIT License（允许自由使用、修改、分发、商用、再许可） |
-| **附加条款** | **使用者与 Fork／衍生分支必须完整保留原作者署名**，不得移除、遮盖、替换或伪造 |
+| 基础协议 | [MIT License](LICENSE)（允许自由使用、修改、分发、商用、再许可） |
+| **附加条款** | [LICENSE-ADDITIONAL.md](LICENSE-ADDITIONAL.md) —— **使用者与 Fork／衍生分支必须完整保留原作者署名**，不得移除、遮盖、替换或伪造 |
 | 修改后分发 | 须注明「基于 hanyuestar/Investment-Management- 修改」，并不得暗示为原作者官方版本 |
-| 完整条款 | 见仓库根目录 [**LICENSE**](LICENSE)（含附加署名条款全文与免责声明） |
+| 许可识别 | GitHub 侧边栏显示 MIT；附加条款与 MIT **同时生效**，其约束力强于 MIT 原文 |
 
 **一句话**：随便用、随便改、可商用，**但请保留我的名字**。
 
 ### 第三方组件
 
-使用了以下开源组件，著作权归各自作者，均按其自身许可授权（详见 [LICENSE](LICENSE) 第三节）：
+使用了以下开源组件，著作权归各自作者，均按其自身许可授权（详见 [LICENSE-ADDITIONAL.md](LICENSE-ADDITIONAL.md) 第二节）：
 
 - **MIT**：Vue 3、Vue Router、Pinia、Element Plus、@element-plus/icons-vue、Vite、Express、better-sqlite3、bcryptjs、jsonwebtoken
-- **Apache-2.0**：ECharts
-- **MIT-0**：nodemailer ｜ **ISC**：node-cron
+- **Apache-2.0**：ECharts ｜ **MIT-0**：nodemailer ｜ **ISC**：node-cron
 
 ### 免责声明
 
