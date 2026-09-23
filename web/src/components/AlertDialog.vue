@@ -2,11 +2,11 @@
   <el-dialog :model-value="modelValue" @update:model-value="v => $emit('update:modelValue', v)"
     :title="`价格预警 · ${asset?.name || ''}`" width="460px">
     <el-form label-width="120px">
-      <el-form-item label="止盈价(原币)">
+      <el-form-item :label="`止盈价(${ccyName(asset?.currency)})`">
         <el-input-number v-model="form.takeProfitPrice" :min="0" :precision="3"
           controls-position="right" style="width:200px" placeholder="现价超过触发" />
       </el-form-item>
-      <el-form-item label="止损价(原币)">
+      <el-form-item :label="`止损价(${ccyName(asset?.currency)})`">
         <el-input-number v-model="form.stopLossPrice" :min="0" :precision="3"
           controls-position="right" style="width:200px" placeholder="现价跌破触发" />
       </el-form-item>
@@ -33,6 +33,7 @@
 import { reactive, ref, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { assetsApi } from '../api';
+import { ccyName } from '../utils/format';
 
 const props = defineProps({
   modelValue: Boolean,

@@ -5,6 +5,13 @@ export const TYPE_BADGE = { stock: 'badge-stock', fund: 'badge-fund', wealth: 'b
 export const TYPE_COLORS = { stock: '#e0463e', fund: '#17a2b8', wealth: '#7c52b8', bond: '#e8a93b' };
 export const MARKET_LABEL = { CN: 'A股', US: '美股' };
 export const ACCOUNT_KIND_LABEL = { broker: '券商', bank: '银行', other: '其他' };
+
+/** 货币中文名（库存币种 + 常见外币，未知则回显代码） */
+export const CCY_LABEL = {
+  CNY: '人民币', USD: '美元', HKD: '港币', JPY: '日元', EUR: '欧元',
+  GBP: '英镑', AUD: '澳元', CAD: '加元', SGD: '新加坡元', KRW: '韩元', TWD: '新台币',
+};
+export const ccyName = code => CCY_LABEL[String(code || '').toUpperCase()] || String(code || '');
 export const EVENT_LABEL = {
   buy: '买入', sell: '卖出', div: '分红', bonus: '送股', split: '拆分',
   invest: '申购/投入', redeem: '赎回', income: '收益',

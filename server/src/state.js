@@ -96,6 +96,7 @@ function buildState(userId) {
     .map(c => ({
       id: String(c.id), accountId: String(c.account_id), date: c.date, kind: c.kind,
       amount: c.amount, fx: c.fx || 1, note: c.note || '',
+      inputCurrency: c.input_currency || null, inputAmount: c.input_amount != null ? c.input_amount : c.amount,
     }));
 
   const dcaPlans = db.prepare('SELECT * FROM dca_plan WHERE user_id=? ORDER BY id').all(userId)

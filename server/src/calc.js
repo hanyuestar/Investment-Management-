@@ -56,7 +56,7 @@
   const actionOf = e => e.side || e.kind || '';
 
   /**
-   * 单位价格（原币）：
+   * 单位价格（账户币种）：
    *  - 股票：a.price（市价）
    *  - 非股票：a.unitPrice（单位净值）；为 0 时回退到 marketValue/qty
    *  注意：股票不得走 unitPrice 分支 —— 数据库里股票的 unit_price 恒为 0，
@@ -103,7 +103,7 @@
       const tQty = +t.qty || 0;
       const tAmtRaw = t.amount != null ? +t.amount || 0 : 0;
       const tPrice = +t.price || (tQty > 0 ? tAmtRaw / tQty : 0);
-      const grossAmt = tQty > 0 ? tQty * tPrice : tAmtRaw;   // 成交金额（原币）
+      const grossAmt = tQty > 0 ? tQty * tPrice : tAmtRaw;   // 成交金额（账户币种）
       const fee = t.fee || 0;
 
       if (act === 'opening') {
@@ -228,7 +228,7 @@
    * 账户现金 & 本金（外部现金流）
    * ========================================================= */
   /**
-   * 账户现金余额（原币折算 CNY）
+   * 账户现金余额（账户币种折算 CNY）
    *  现金 = 入金 − 出金
    *       − 买入(含费) − 申购(含费)
    *       + 卖出(扣费) + 赎回

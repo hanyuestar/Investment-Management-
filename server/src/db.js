@@ -58,9 +58,9 @@ CREATE TABLE IF NOT EXISTS asset (
   market       TEXT,                                   -- CN | US
   type         TEXT NOT NULL,                          -- stock | fund | wealth | bond
   currency     TEXT NOT NULL,                          -- CNY | USD
-  price        REAL NOT NULL DEFAULT 0,                -- 股票最新价（原币）
-  market_value REAL NOT NULL DEFAULT 0,                -- 非股票当前市值（原币）
-  unit_price   REAL NOT NULL DEFAULT 0,                -- 非股票单位净值/单价（原币；市值 = 份额 × 单位净值）
+  price        REAL NOT NULL DEFAULT 0,                -- 股票最新价（账户币种）
+  market_value REAL NOT NULL DEFAULT 0,                -- 非股票当前市值（账户币种）
+  unit_price   REAL NOT NULL DEFAULT 0,                -- 非股票单位净值/单价（账户币种；市值 = 份额 × 单位净值）
   alerts_json  TEXT,
   created_at   TEXT NOT NULL
 );
@@ -119,14 +119,16 @@ CREATE TABLE IF NOT EXISTS benchmark (
 
 -- 出入金（账户级本金搬运）
 CREATE TABLE IF NOT EXISTS cash_flow (
-  id         INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id    INTEGER NOT NULL REFERENCES user(id) ON DELETE CASCADE,
-  account_id INTEGER NOT NULL REFERENCES account(id) ON DELETE CASCADE,
-  date       TEXT NOT NULL,
-  kind       TEXT NOT NULL,     -- deposit | withdraw
-  amount     REAL NOT NULL,     -- 原币
-  fx         REAL NOT NULL DEFAULT 1,
-  note       TEXT
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id        INTEGER NOT NULL REFERENCES user(id) ON DELETE CASCADE,
+  account_id     INTEGER NOT NULL REFERENCES account(id) ON DELETE CASCADE,
+  date           TEXT NOT NULL,
+  kind           TEXT NOT NULL,     -- deposit | withdraw
+  amount         REAL NOT NULL,     -- 【账户币种】金额（换算后）
+  fx             REAL NOT NULL DEFAULT 1,  -- 账户币种→CNY 汇率（CNY 账户恒为 1）
+  input_currency TEXT,              -- 用户录入时选择的币种（CNY | USD）
+  input_amount   REAL,              -- 用户录入的原始金额（input_currency 计价）
+  note           TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_cashflow_user ON cash_flow(user_id);
 
@@ -192,6 +194,13 @@ function addColumn(table, col, ddl) {
 
 function migrate() {
   addColumn('asset', 'unit_price', 'unit_price REAL NOT NULL DEFAULT 0');
+  addColumn('cash_flow', 'input_currency', 'input_currency TEXT');
+  addColumn('cash_flow', 'input_amount', 'input_amount REAL');
+  /* 老出入金记录：录入币种即账户币种、原始金额即 amount（幂等，只补 NULL 行） */
+  db.prepare(`UPDATE cash_flow
+    SET input_currency = COALESCE((SELECT a.currency FROM account a WHERE a.id = cash_flow.account_id), 'CNY'),
+        input_amount   = amount
+    WHERE input_currency IS NULL OR input_amount IS NULL`).run();
   migrateV5Caliber();
 }
 
@@ -200,7 +209,7 @@ const MIGRATION_KEY = 'schema_v5_caliber';
 
 /**
  * v5 口径迁移：让老数据也能用「份额 + 成本」框架计算，且**不产生虚增收益**。
- *  1) 非股票资产补单位净值：缺省 1（即「1 份 = 1 原币」，份额 = 金额）——这是最常见
+ *  1) 非股票资产补单位净值：缺省 1（即「1 份 = 1 账户币种」，份额 = 金额）——这是最常见
  *     的记账近似；用户可在资产编辑里改成真实净值。
  *  2) 非股票既有 invest/redeem 事件补 qty = amount / unit_price，使「份额 × 净值 = 金额」自洽。
  *  3) **无任何事件**却已有市值的资产，补一条 opening（成本 = 当前市值）→ 期初收益为 0，

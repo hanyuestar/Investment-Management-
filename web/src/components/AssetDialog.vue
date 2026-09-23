@@ -39,13 +39,13 @@
       </template>
 
       <!-- 当前价格 / 净值 -->
-      <el-form-item v-if="isStock" label="最新价(原币)">
+      <el-form-item v-if="isStock" :label="`最新价(${ccyName(form.currency)})`">
         <el-input-number v-model="form.price" :min="0" :precision="4" controls-position="right" style="width:180px" />
         <span class="form-tip" style="margin-left:8px" v-if="isEdit">类型/市场/币种/账户不可改</span>
       </el-form-item>
       <el-form-item v-else label="单位净值" required>
         <el-input-number v-model="form.unitPrice" :min="0" :precision="6" controls-position="right" style="width:180px" />
-        <span class="form-tip" style="margin-left:8px">原币；市值 = 份额 × 单位净值</span>
+        <span class="form-tip" style="margin-left:8px">单位净值以账户币种计价；市值 = 份额 × 单位净值</span>
       </el-form-item>
 
       <!-- 期初建仓（仅创建时可填） -->
@@ -91,6 +91,7 @@ import { reactive, ref, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import { assetsApi } from '../api';
 import { ACCOUNT_KIND_LABEL } from '../utils/format';
+import { ccyName } from '../utils/format';
 
 const props = defineProps({
   modelValue: Boolean,

@@ -52,8 +52,8 @@
             <el-table-column label="标的" min-width="140">
               <template #default="{ row }">{{ row.name }}</template>
             </el-table-column>
-            <el-table-column label="现价(原币)" width="110" align="right">
-              <template #default="{ row }">{{ money(row.current, 4) }}</template>
+            <el-table-column label="现价" width="130" align="right">
+              <template #default="{ row }">{{ money(row.current, 4) }} {{ ccyName(row.ccy) }}</template>
             </el-table-column>
             <el-table-column label="止盈价" width="100" align="right">
               <template #default="{ row }">{{ row.tp ? money(row.tp, 4) : '—' }}</template>
@@ -109,7 +109,7 @@ import { reactive, computed, ref, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { alertsApi, authApi } from '../api';
-import { money, pct, TYPE_LABEL, TYPE_BADGE } from '../utils/format';
+import { money, pct, TYPE_LABEL, TYPE_BADGE, ccyName } from '../utils/format';
 
 const store = usePortfolioStore();
 const conc = computed(() => store.d?.concentration || { list: [], top1: 0, top5: 0, byType: {}, warnSingle: 0.2, warnTop5: 0.6, alerts: [] });
@@ -154,7 +154,7 @@ const priceWatch = computed(() => {
     let current = 0;
     if (a.type === 'stock') current = Number(a.price) || 0;
     else current = h.qty > 0 ? (h.mvLocal || 0) / h.qty : 0;
-    out.push({ name: a.name, current, tp: tp || null, sl: sl || null });
+    out.push({ name: a.name, current, ccy: a.currency, tp: tp || null, sl: sl || null });
   }
   return out;
 });

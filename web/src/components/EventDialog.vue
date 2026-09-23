@@ -24,7 +24,7 @@
           <el-form-item label="数量(股)" required>
             <el-input-number v-model="form.qty" :min="0" :precision="0" controls-position="right" style="width:200px" />
           </el-form-item>
-          <el-form-item label="成交价(原币)" required>
+          <el-form-item :label="`成交价(${ccyName(asset?.currency)})`" required>
             <el-input-number v-model="form.price" :min="0" :precision="3" controls-position="right" style="width:200px" />
           </el-form-item>
           <el-form-item label="标记为做T" v-if="form.side === 'buy'">
@@ -41,7 +41,7 @@
           <el-input-number v-model="form.ratio" :min="0" :step="0.1" :precision="3" controls-position="right" style="width:200px" />
           <span class="form-tip" style="margin-left:8px">2=1拆2；0.5=合股</span>
         </el-form-item>
-        <el-form-item label="手续费(原币)">
+        <el-form-item :label="`手续费(${ccyName(asset?.currency)})`">
           <el-input-number v-model="form.fee" :min="0" :precision="2" controls-position="right" style="width:200px" />
         </el-form-item>
       </template>
@@ -62,13 +62,13 @@
           </el-form-item>
           <el-form-item label="单位净值" required>
             <el-input-number v-model="form.price" :min="0" :precision="6" controls-position="right" style="width:200px" />
-            <span class="form-tip" style="margin-left:8px">原币/份，申购赎回按当时净值</span>
+            <span class="form-tip" style="margin-left:8px">{{ ccyName(asset?.currency) }}/份，申购赎回按当时净值</span>
           </el-form-item>
           <el-form-item label="金额合计">
             <span class="form-tip">{{ computedAmount }}（= 份额 × 单位净值，由系统计算）</span>
           </el-form-item>
         </template>
-        <el-form-item v-else label="金额(原币)" required>
+        <el-form-item v-else :label="`金额(${ccyName(asset?.currency)})`" required>
           <el-input-number v-model="form.amount" :min="0" :precision="2" controls-position="right" style="width:240px" />
         </el-form-item>
       </template>
@@ -93,6 +93,7 @@ import { reactive, ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { eventsApi, fxApi } from '../api';
 import { todayStr, TYPE_LABEL, MARKET_LABEL } from '../utils/format';
+import { ccyName } from '../utils/format';
 
 const props = defineProps({
   modelValue: Boolean,

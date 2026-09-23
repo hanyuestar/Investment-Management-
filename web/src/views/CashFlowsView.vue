@@ -29,14 +29,23 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="金额(原币)" width="140" align="right">
-          <template #default="{ row }">{{ money(row.amount) }} {{ accountCcy(row.accountId) }}</template>
+        <el-table-column label="录入金额" width="150" align="right">
+          <template #default="{ row }">
+            {{ money(row.inputAmount) }} {{ row.inputCurrency || accountCcy(row.accountId) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="入账金额(账户币种)" width="160" align="right">
+          <template #default="{ row }">
+            <span v-if="(row.inputCurrency || accountCcy(row.accountId)) === accountCcy(row.accountId)"
+              class="muted">同币种，直接入账</span>
+            <b v-else class="num">{{ money(row.amount) }} {{ accountCcy(row.accountId) }}</b>
+          </template>
         </el-table-column>
         <el-table-column label="汇率" width="90" align="right">
           <template #default="{ row }">{{ row.fx !== 1 ? Number(row.fx).toFixed(4) : '—' }}</template>
         </el-table-column>
         <el-table-column label="折合 CNY" width="140" align="right">
-          <template #default="{ row }"><b class="num">¥{{ money(row.amount * (row.fx || 1)) }}</b></template>
+          <template #default="{ row }"><b class="num">¥{{ money(row.amountCNY != null ? row.amountCNY : row.amount * (row.fx || 1)) }}</b></template>
         </el-table-column>
         <el-table-column prop="note" label="备注" min-width="140" show-overflow-tooltip />
         <el-table-column label="操作" width="90" fixed="right">

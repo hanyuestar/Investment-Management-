@@ -49,8 +49,8 @@
             </span>
           </div>
           <div class="tx-line" v-if="row.amount != null || row.ratio != null">
-            <span class="k">金额(原币)</span>
-            <span class="num">{{ row.amount != null ? money(row.amount) : '比例 ' + row.ratio }}</span>
+            <span class="k">金额</span>
+            <span class="num">{{ row.amount != null ? money(row.amount) + ' ' + ccyName(assetOf(row.assetId)?.currency) : '比例 ' + row.ratio }}</span>
           </div>
           <div class="tx-line" v-if="(row.fx && row.fx !== 1) || row.fee">
             <span class="k">汇率 / 手续费</span>
@@ -91,9 +91,9 @@
         <el-table-column label="价格" width="90" align="right">
           <template #default="{ row }">{{ row.price != null ? money(row.price, 3) : '—' }}</template>
         </el-table-column>
-        <el-table-column label="金额(原币)" width="120" align="right">
+        <el-table-column label="金额" width="150" align="right">
           <template #default="{ row }">
-            {{ row.amount != null ? money(row.amount) : (row.ratio != null ? '比例 ' + row.ratio : '—') }}
+            {{ row.amount != null ? money(row.amount) + ' ' + ccyName(assetOf(row.assetId)?.currency) : (row.ratio != null ? '比例 ' + row.ratio : '—') }}
           </template>
         </el-table-column>
         <el-table-column label="汇率" width="80" align="right">
@@ -140,7 +140,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { eventsApi } from '../api';
-import { money, EVENT_LABEL, TYPE_LABEL } from '../utils/format';
+import { money, EVENT_LABEL, TYPE_LABEL, ccyName } from '../utils/format';
 import EventDialog from '../components/EventDialog.vue';
 
 const store = usePortfolioStore();

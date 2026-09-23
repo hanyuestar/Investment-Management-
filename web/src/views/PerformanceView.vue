@@ -111,7 +111,7 @@ const twrOption = computed(() => {
 });
 
 const cashOption = computed(() => {
-  // 注意：/api/state 的 cashFlow 为 {amount(原币), fx}，CNY 口径需 amount × fx；
+  // 注意：/api/state 的 cashFlow 为 {amount(账户币种), fx}，CNY 口径需 amount × fx；
   // （早期版本误读不存在的 f.amountCNY，导致柱子全为无效值）
   const flows = [...store.cashFlows].sort((a, b) => (a.date < b.date ? -1 : 1));
   const points = flows.map(f => {
