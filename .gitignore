@@ -19,6 +19,8 @@ data/backups/*
 !data/backups/.gitkeep
 /backups/
 !data/.gitkeep
+# 在 server/ 目录内以相对 DB_PATH 启动时会生成（上面的 data/*.db 为根锚定，覆盖不到此路径）
+server/data/
 
 # ============ 环境变量与密钥 ============
 .env

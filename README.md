@@ -6,6 +6,42 @@
 
 ---
 
+## 🖼 界面速览
+
+> 全部截图由「数据管理 → 载入示例数据」生成，可一键复现（汇率 6.6954，总资产 ¥463,480.44）。红涨绿跌。
+
+**核心能力**
+
+| 总览 · 8 张 KPI + 持仓看板 + 类型分布 | 绩效 · XIRR / TWR / 基准 α 与月度对比 |
+|---|---|
+| ![总览](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-dashboard.png) | ![绩效](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-performance.png) |
+
+| 配置 · 大类环形图 + 目标比例与再平衡建议 | 风险 · 持仓集中度 + 止盈止损预警 |
+|---|---|
+| ![配置](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-allocation.png) | ![风险](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-risk.png) |
+
+**更多页面**
+
+| 交易流水 · 买卖/分红/送股/拆分与锁定汇率 | 持仓 · 按类型筛选与关键词搜索 |
+|---|---|
+| ![交易流水](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-transactions.png) | ![持仓](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-holdings.png) |
+
+| 税务 · 分红税分档与资本利得明细 | 收益报表 · 月度/年度已实现与含浮动 |
+|---|---|
+| ![税务](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-tax.png) | ![收益报表](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-reports.png) |
+
+| 定投 · 按月计划与幂等批量生成 | 管理后台 · 用户 / 汇率 / SMTP |
+|---|---|
+| ![定投](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-dca.png) | ![管理后台](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-admin.png) |
+
+**移动端适配**（≤768px 自动切换：抽屉导航 + 单列堆叠 + 宽表卡片化）
+
+| 抽屉导航（汉堡按钮唤出，含账户视角切换） | 交易流水卡片化（字段与桌面表格一致） |
+|---|---|
+| ![移动端抽屉导航](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/mobile-drawer.png) | ![移动端交易流水](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/mobile-transactions.png) |
+
+---
+
 ## 一、功能清单
 
 | 模块 | 能力 |
@@ -17,7 +53,7 @@
 | 绩效 | XIRR（资金加权，按天精确年化）、TWR（月末快照链式时间加权）、简单年化、累计收益率、基准 α、月度对比表与 ECharts 曲线 |
 | 配置 | 大类资产环形图、境内/境外市场暴露、目标比例滑块、再平衡应调整金额、偏离度（Σ\|当前−目标\|/2）、账户分布 |
 | 风险 | 第一大 / 前 5 大持仓集中度、股票类占比、止盈止损监控、预警阈值设置、站内预警 |
-| 税务 | A 股分红按 FIFO 批次持有期限定档（≤1 月 20%、1 月~1 年 10%、>1 年免征）、美股分红 30%、资本利得按市场×年度汇总 |
+| 税务 | A 股分红按除息日距**最早买入日**的持股期限定档（≤1 月 20%、1 月~1 年 10%、>1 年免征）、美股分红 30%、资本利得按市场×年度汇总（恒用移动加权平均口径） |
 | 定投 | 基金 / 理财 / 债券按月定投计划，一键批量生成申购流水，**幂等**（同资产同日自动跳过），每日 00:10 自动补投 |
 | 出入金 | 账户级本金搬运，**完全不参与盈亏计算**；XIRR 现金流只认出金/入金 |
 | 收益报表 | 月度已实现 / 净投入 / 月末总值 / 含浮动收益，年度汇总；无快照月份不做插值 |
@@ -51,6 +87,7 @@ Investment Management/
 ├── data/                      # 运行时数据（SQLite、备份），已 gitignore，仅保留 .gitkeep
 │   └── backups/               # 自动备份与导入前备份的 JSON
 ├── docs/                      # 项目 Wiki 源文件（★ 不提交到代码仓库，只推送到 GitHub Wiki，已 gitignore）
+├── screenshots/               # README「界面速览」功能截图（演示数据生成，经调色板量化压缩）
 ├── design/                    # 设计交付包归档（规格文档、原型、参考引擎与测试，不参与运行）
 ├── server/                    # 后端
 │   ├── package.json
