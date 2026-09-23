@@ -38,14 +38,29 @@
         </el-form-item>
       </template>
 
-      <!-- 当前价格 / 净值 -->
-      <el-form-item v-if="isStock" :label="`最新价(${ccyName(form.currency)})`">
-        <el-input-number v-model="form.price" :min="0" :precision="4" controls-position="right" style="width:180px" />
-        <span class="form-tip" style="margin-left:8px" v-if="isEdit">类型/市场/币种/账户不可改</span>
+      <!-- 当前价值：按单价 或 按总市值（二选一） -->
+      <el-form-item label="当前价值方式">
+        <el-radio-group v-model="form.valueMode">
+          <el-radio-button label="unit">按单价</el-radio-button>
+          <el-radio-button label="total">按总市值</el-radio-button>
+        </el-radio-group>
+        <span class="form-tip" style="margin-left:8px">总市值更好找：直接填账户里现在值多少钱</span>
       </el-form-item>
-      <el-form-item v-else label="单位净值" required>
-        <el-input-number v-model="form.unitPrice" :min="0" :precision="6" controls-position="right" style="width:180px" />
-        <span class="form-tip" style="margin-left:8px">单位净值以账户币种计价；市值 = 份额 × 单位净值</span>
+      <el-form-item v-if="form.valueMode === 'unit'"
+        :label="isStock ? `最新价(${ccyName(form.currency)})` : `单位净值(${ccyName(form.currency)})`" required>
+        <el-input-number v-model="form.unitValue" :min="0" :precision="6" controls-position="right" style="width:180px" />
+        <span class="form-tip" style="margin-left:8px">市值 = 份额 × 单价</span>
+      </el-form-item>
+      <el-form-item v-else :label="`当前总市值(${ccyName(form.currency)})`" required>
+        <el-input-number v-model="form.totalValue" :min="0" :precision="2" controls-position="right" style="width:180px" />
+        <div class="form-tip" style="margin-left:8px;line-height:1.6">
+          <template v-if="currentQty > 0">
+            按当前份额 <b>{{ currentQty }}</b> 折合单价 <b>{{ derivedUnit }}</b>（保存时由系统换算）
+          </template>
+          <template v-else>
+            ⚠️ 尚无份额，无法折合单价：请先填写「期初份额」，或改用「按单价」
+          </template>
+        </div>
       </el-form-item>
 
       <!-- 期初建仓（仅创建时可填） -->
@@ -92,6 +107,7 @@ import { ElMessage } from 'element-plus';
 import { assetsApi } from '../api';
 import { ACCOUNT_KIND_LABEL } from '../utils/format';
 import { ccyName } from '../utils/format';
+import { usePortfolioStore } from '../stores/portfolio';
 
 const props = defineProps({
   modelValue: Boolean,
@@ -105,6 +121,31 @@ const isStock = computed(() => form.type === 'stock');
 const saving = ref(false);
 const form = reactive({});
 
+const store = usePortfolioStore();
+/** 当前份额：新建时用「期初份额」；编辑时取账本中的实际持仓份额 */
+const currentQty = computed(() => {
+  if (isEdit.value) {
+    const h = store.holdings.find(x => x.asset.id === props.asset.id);
+    return +(h?.qty || 0);
+  }
+  return +form.openingQty || 0;
+});
+/** 「按总市值」时折合出的单价 */
+const derivedUnit = computed(() => {
+  const q = currentQty.value;
+  if (!(q > 0)) return '—';
+  const t = +form.totalValue || 0;
+  return t > 0 ? (t / q).toFixed(6) : '—';
+});
+/** 本次提交的有效单价（按单价 或 由总市值折合） */
+const effectiveUnit = computed(() => {
+  if (form.valueMode === 'total') {
+    const q = currentQty.value, t = +form.totalValue || 0;
+    return q > 0 && t > 0 ? t / q : 0;
+  }
+  return +form.unitValue || 0;
+});
+
 const openingQty = computed(() => +form.openingQty || 0);
 const openingUnit = computed(() => {
   if (+form.openingCostPrice > 0) return +form.openingCostPrice;
@@ -116,24 +157,26 @@ const openingCostText = computed(() => {
   return c > 0 ? c.toFixed(2) : '—';
 });
 const openingMvText = computed(() => {
-  const nav = isStock.value ? +form.price || 0 : +form.unitPrice || 0;
-  const mv = openingQty.value * nav;
+  const mv = openingQty.value * effectiveUnit.value;
   return mv > 0 ? mv.toFixed(2) : '—';
 });
 
 function reset() {
   if (props.asset) {
     Object.assign(form, {
-      name: props.asset.name, code: props.asset.code, price: props.asset.price,
-      unitPrice: props.asset.unitPrice, marketValue: props.asset.marketValue,
+      name: props.asset.name, code: props.asset.code,
       type: props.asset.type, market: props.asset.market || 'CN', currency: props.asset.currency,
+      valueMode: 'unit',
+      unitValue: props.asset.type === 'stock' ? props.asset.price : props.asset.unitPrice,
+      totalValue: null,
       openingQty: 0, openingCostPrice: null, openingAmount: null, openingDate: '',
     });
   } else {
     const today = new Date().toISOString().slice(0, 10);
     Object.assign(form, {
       name: '', code: '', accountId: props.accounts[0]?.id || '', type: 'stock',
-      market: 'CN', currency: 'CNY', price: 0, unitPrice: 0, marketValue: 0,
+      market: 'CN', currency: 'CNY',
+      valueMode: 'unit', unitValue: 0, totalValue: null,
       openingQty: 0, openingCostPrice: null, openingAmount: null, openingDate: today,
     });
   }
@@ -146,6 +189,16 @@ watch(() => form.type, t => {
 watch(() => form.market, m => {
   if (form.type === 'stock') form.currency = m === 'US' ? 'USD' : 'CNY';
 });
+
+/** 当前价值校验失败时的提示语 */
+function valueHint() {
+  if (form.valueMode === 'total') {
+    return currentQty.value > 0
+      ? '请填写当前总市值'
+      : '「按总市值」需先填写期初份额（用于折合单价），或改用「按单价」';
+  }
+  return isStock.value ? '请填写最新价' : '请填写单位净值（市值 = 份额 × 单位净值）';
+}
 
 function buildOpening() {
   if (!(openingQty.value > 0)) return null;
@@ -162,22 +215,21 @@ async function save() {
     if (!form.name.trim()) return ElMessage.warning('请填写资产名称');
     saving.value = true;
     if (isEdit.value) {
+      const unit = effectiveUnit.value;
+      if (!(unit > 0)) return ElMessage.warning(valueHint());
       const payload = { name: form.name, code: form.code };
-      if (isStock.value) payload.price = +form.price || 0;
-      else payload.unitPrice = +form.unitPrice || 0;
+      if (isStock.value) payload.price = unit; else payload.unitPrice = unit;
       await assetsApi.update(props.asset.id, payload);
       ElMessage.success('已保存');
     } else {
       if (!form.accountId) return ElMessage.warning('请选择所属账户');
       if (form.type === 'stock' && !form.market) return ElMessage.warning('股票请选择市场');
-      if (form.type !== 'stock' && !(+form.unitPrice > 0)) {
-        return ElMessage.warning('非股票资产请填写单位净值（市值 = 份额 × 单位净值）');
-      }
+      if (!(effectiveUnit.value > 0)) return ElMessage.warning(valueHint());
       const payload = {
         name: form.name, code: form.code, accountId: form.accountId, type: form.type,
         market: form.market, currency: form.currency,
-        price: isStock.value ? +form.price || 0 : 0,
-        unitPrice: isStock.value ? 0 : +form.unitPrice || 0,
+        price: isStock.value ? effectiveUnit.value : 0,
+        unitPrice: isStock.value ? 0 : effectiveUnit.value,
       };
       const opening = buildOpening();
       if (openingQty.value > 0 && !opening) {

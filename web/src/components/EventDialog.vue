@@ -77,6 +77,12 @@
         <el-input-number v-model="form.fx" :min="0" :step="0.001" :precision="4" controls-position="right" style="width:200px" />
         <span class="form-tip" style="margin-left:8px">1 USD = ? CNY，默认当日生效汇率</span>
       </el-form-item>
+      <el-form-item label=" " v-if="isBuyLike">
+        <span class="form-tip" style="line-height:1.6">
+          💡 若这笔钱是从账户外部转入的，请先在「出入金」页登记<b>入金</b>；
+          此处只记录账户内部「资金→持仓」的转换，避免同一笔钱被重复计入投入。
+        </span>
+      </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="form.note" placeholder="如：建仓 / 补仓 / T出" />
       </el-form-item>
@@ -107,6 +113,10 @@ const form = reactive({});
 const assetLabel = computed(() =>
   `${props.asset.name}（${TYPE_LABEL[props.asset.type]}${props.asset.market ? '·' + MARKET_LABEL[props.asset.market] : ''}·${props.asset.currency}）`);
 const title = computed(() => `${props.event ? '编辑' : '新增'}流水 · ${props.asset.name}`);
+/** 买入/申购：提示入金登记，避免重复计入投入 */
+const isBuyLike = computed(() =>
+  props.asset?.type === 'stock' ? form.side === 'buy'
+    : (form.kind === 'invest'));
 const isFlowShare = computed(() =>
   props.asset?.type !== 'stock' && (form.kind === 'invest' || form.kind === 'redeem'));
 const computedAmount = computed(() => {

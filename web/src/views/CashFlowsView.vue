@@ -4,16 +4,28 @@
       <div>
         <h2>出入金</h2>
         <div class="sub">本金搬运本身不产生盈亏；但计入账户现金与累计投入，并作为 XIRR 的外部现金流</div>
+        <div class="sub" style="margin-top:2px">此处只记录<b>外部资金进出账户</b>。用账户里的钱买股票/基金属于<b>账户内部转移</b>，请勿重复登记入金（否则现金与总资产会虚增）。</div>
       </div>
       <div class="actions">
         <el-button type="primary" @click="ops.addCash()">+ 登记出入金</el-button>
       </div>
     </div>
 
-    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+    <div v-if="cash.cash < -0.01" style="margin:0 0 12px;padding:10px 14px;border-radius:8px;
+      background:#fef0f0;border:1px solid #fde2e2;color:#c45656;font-size:13px;line-height:1.7">
+      ⚠️ <b>账户现金为 {{ money(cash.cash) }}</b>：登记的入金不足以覆盖买入/申购支出，
+      说明有<b>漏记的入金</b>。请补录，否则「总资产」会偏低。
+      提示：买入/申购<b>不要</b>再记入金——同一笔钱只在「入金」时算一次外部流入。
+    </div>
+
+    <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
       <div class="kpi"><div class="label">累计入金 (CNY)</div><div class="val num up">¥{{ money(cash.deposit) }}</div></div>
       <div class="kpi"><div class="label">累计出金 (CNY)</div><div class="val num down">¥{{ money(cash.withdraw) }}</div></div>
-      <div class="kpi"><div class="label">净入金 (CNY)</div><div class="val num">¥{{ money(cash.net) }}</div></div>
+      <div class="kpi"><div class="label">净入金 (CNY)</div><div class="val num">¥{{ money(cash.net) }}</div>
+        <div class="sub num muted">= 累计投入（本金口径）</div></div>
+      <div class="kpi"><div class="label">账户现金 (CNY)</div>
+        <div class="val num" :class="cash.cash < 0 ? 'down' : ''">¥{{ money(cash.cash) }}</div>
+        <div class="sub num muted">入金 − 出金 − 买入 − 申购 + 卖出 + 赎回 + 分红/利息</div></div>
     </div>
 
     <div class="card">
