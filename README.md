@@ -224,40 +224,9 @@ npm test                   # = calc.test.js（16 场景 49 断言）+ node --tes
 
 ---
 
-## 八、推送（代码仓库 + Wiki）
+## 八、已知限制
 
-**⚠️ 文档归属约定**：`docs/` 是 **Wiki 源文件，不提交到代码仓库**（已加入 `.gitignore`）。代码仓库只放源码、测试、`design/` 设计归档、Docker 文件与 README。
-
-本仓库已配好 `.gitignore`（忽略 `docs/`、`node_modules/`、`web/dist/`、`data/*.db*`、`data/backups/`、`.env`、`*.log`、测试备份等）。在项目根目录执行：
-
-```bash
-# 注意：文件夹名 "Investment Management‌" 末尾含一个不可见字符（U+200C），
-# 所有命令请用引号包裹路径，或直接在该文件夹内打开终端。
-
-# ---- 代码仓库 ----
-git add -A
-git status                 # ★ 提交前务必检查：不得出现 node_modules、*.db、.env、web/dist、docs/
-git commit -m "feat: 个人投资资产管理系统 v4.0（前后端 + Docker + 响应式适配）"
-
-git remote add origin https://github.com/hanyuestar/Investment-Management-.git
-git branch -M main
-git push -u origin main
-
-# ---- Wiki（文档单独推送，默认分支 master）----
-git clone https://github.com/hanyuestar/Investment-Management-.wiki.git /tmp/imwiki
-cp docs/*.md /tmp/imwiki/
-cd /tmp/imwiki && git add -A && git commit -m "docs: 同步项目文档" && git push origin master
-```
-
-提交到代码仓库的内容应只有：源码、测试、`design/` 设计归档、Docker 文件、`.env.example`、`.gitignore`、`data/.gitkeep` 等占位文件。**`docs/`、`.env`、SQLite 数据库、备份 JSON、日志、依赖与构建产物永远不会被提交。**
-
-> 提示：`docs/` 已在 `.gitignore` 中，若它在历史提交里已被跟踪，需执行一次 `git rm -r --cached docs/`。
-
----
-
-## 九、已知限制
-
-1. 本机开发环境无 Docker，Dockerfile / compose 未在本机实跑，仅做了等价的原生 Node 运行验证（详见 [10 交叉验证报告](https://github.com/hanyuestar/Investment-Management-/wiki/10-交叉验证报告)）。
+1. **Docker 镜像已通过 GitHub Actions 多架构（linux/amd64 + arm64）构建并发布**，但**未在本机以容器方式实跑**（本机无 Docker 环境）——容器编排/健康检查行为建议自行冒烟一次。
 2. 前端无单元测试，靠构建 + 浏览器走查验收；响应式部分已补 CDP 真机自动化（4 视口 × 15 路由），仍**未在 iOS Safari / Android Chrome 真机实测**，触摸手势与软键盘行为未覆盖（详见 [11 报告](https://github.com/hanyuestar/Investment-Management-/wiki/11-交叉验证与移动端适配报告) §八）。
 3. 行情价格不做自动抓取：股票现价、非股票持仓市值需手工维护（数据页/持仓卡片编辑）。
 4. 税务模块为辅助估算，不覆盖所有减免情形，不构成申报依据。**注意：资本利得按移动加权平均口径计算，不随「成本核算方法」的 FIFO 设置变化**，详见 [11 报告](https://github.com/hanyuestar/Investment-Management-/wiki/11-交叉验证与移动端适配报告) §三 B8。
@@ -265,6 +234,6 @@ cd /tmp/imwiki && git add -A && git commit -m "docs: 同步项目文档" && git 
 
 ---
 
-## 十、许可
+## 九、许可
 
 私有项目，默认保留所有权利。如需开源，请自行补充 LICENSE 文件。
