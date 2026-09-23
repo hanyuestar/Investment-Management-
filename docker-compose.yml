@@ -1,6 +1,12 @@
+# 两种用法：
+#   1) 直接用预构建镜像（推荐）：docker compose pull && docker compose up -d
+#   2) 本地构建：docker compose up -d --build
+# 镜像来源可切换（默认 ghcr.io）：
+#   IMAGE=kyson666/investment-management docker compose up -d
 services:
   app:
     build: .
+    image: "${IMAGE:-ghcr.io/hanyuestar/investment-management:latest}"
     container_name: investment-manager
     ports:
       - "${PORT:-8080}:8080"

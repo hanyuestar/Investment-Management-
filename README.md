@@ -150,16 +150,37 @@ npm run dev                # http://localhost:5173 ，/api 自动代理到 8080
 
 ## 五、Docker 部署
 
+**方式一：使用预构建镜像（推荐，无需本地构建）**
+
 ```bash
 cp .env.example .env        # 修改 JWT_SECRET、CONFIG_SECRET、ADMIN_PASSWORD
-docker compose up -d --build
+docker compose pull         # 拉取 ghcr.io/hanyuestar/investment-management:latest
+docker compose up -d
 docker compose ps           # healthcheck 变为 healthy 后访问 http://localhost:8080
 ```
+
+| 注册表 | 镜像 |
+|---|---|
+| GitHub Container Registry | `ghcr.io/hanyuestar/investment-management` |
+| Docker Hub | `kyson666/investment-management` |
+
+- 支持 **linux/amd64** 与 **linux/arm64**（x86 服务器与群晖 ARM 机型均可直接运行）；
+- 版本 tag 形如 `v1.0.0`，`latest` 始终指向最新发布版；可用 `:v1.0.0` 锁定版本；
+- 切换到 Docker Hub 源：`IMAGE=kyson666/investment-management:latest docker compose up -d`。
+
+**方式二：本地构建**
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+**通用说明**
 
 - 数据库与备份持久化在宿主机 `./data`；
 - 容器内时区默认 `Asia/Shanghai`；
 - 定时任务（汇率 / 定投 / 备份 / 预警 / 月末快照）在容器内运行；
-- 升级时重新 `build` 即可，SQLite 表使用 `CREATE TABLE IF NOT EXISTS`，数据不丢。
+- 升级时 `docker compose pull && docker compose up -d`（或重新 `build`）即可，SQLite 表使用 `CREATE TABLE IF NOT EXISTS`，数据不丢。
 
 详见 [`02 Docker 部署`](https://github.com/hanyuestar/Investment-Management-/wiki/02-Docker部署)。
 
