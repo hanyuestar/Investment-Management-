@@ -1,0 +1,58 @@
+'use strict';
+/**
+ * 全局配置：统一从环境变量读取，提供默认值。
+ * 本地开发可用 `node --env-file=.env src/server.js` 注入根目录 .env。
+ */
+const path = require('path');
+const fs = require('fs');
+
+const ROOT = path.resolve(__dirname, '..');
+const DATA_DIR = process.env.DATA_DIR
+  || (process.env.DB_PATH ? path.dirname(process.env.DB_PATH) : path.join(ROOT, '..', 'data'));
+
+const config = {
+  ROOT,
+  DATA_DIR,
+  BACKUP_DIR: process.env.BACKUP_DIR || path.join(DATA_DIR, 'backups'),
+  DB_PATH: process.env.DB_PATH || path.join(DATA_DIR, 'invest.db'),
+  PORT: parseInt(process.env.PORT || '8080', 10),
+  NODE_ENV: process.env.NODE_ENV || 'development',
+
+  JWT_SECRET: process.env.JWT_SECRET || 'dev-insecure-secret-change-me',
+  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
+  CONFIG_SECRET: process.env.CONFIG_SECRET || process.env.JWT_SECRET || 'dev-insecure-secret-change-me',
+
+  ADMIN: {
+    username: process.env.ADMIN_USERNAME || 'admin',
+    email: process.env.ADMIN_EMAIL || 'admin@example.com',
+    password: process.env.ADMIN_PASSWORD || 'admin12345',
+  },
+
+  FX: {
+    sourceUrl: process.env.FX_SOURCE_URL || 'https://api.frankfurter.app/latest?from=USD&to=CNY',
+    fallbackUrl: process.env.FX_FALLBACK_URL || 'https://open.er-api.com/v6/latest/USD',
+    syncCron: process.env.FX_SYNC_CRON || '0 8 * * *',
+    syncOnStart: String(process.env.FX_SYNC_ON_START || 'false').toLowerCase() === 'true',
+  },
+
+  SMTP: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '465', 10),
+    secure: String(process.env.SMTP_SECURE ?? 'true').toLowerCase() !== 'false',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || '',
+  },
+
+  // 定时任务开关（测试时关闭）
+  CRON_ENABLED: String(process.env.CRON_ENABLED ?? 'true').toLowerCase() !== 'false',
+  // 数据备份保留天数
+  BACKUP_KEEP_DAYS: parseInt(process.env.BACKUP_KEEP_DAYS || '30', 10),
+};
+
+function ensureDirs() {
+  fs.mkdirSync(config.DATA_DIR, { recursive: true });
+  fs.mkdirSync(config.BACKUP_DIR, { recursive: true });
+}
+
+module.exports = { config, ensureDirs };

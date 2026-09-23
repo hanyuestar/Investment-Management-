@@ -1,0 +1,31 @@
+services:
+  app:
+    build: .
+    container_name: investment-manager
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      # SQLite 数据库、自动备份、导入前备份全部落在 ./data，容器重建不丢数据
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - JWT_SECRET=${JWT_SECRET:-please-change-this-to-a-random-secret}
+      - CONFIG_SECRET=${CONFIG_SECRET:-}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@example.com}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin12345}
+      - DB_PATH=/app/data/invest.db
+      - FX_SOURCE_URL=${FX_SOURCE_URL:-https://api.frankfurter.app/latest?from=USD&to=CNY}
+      - FX_FALLBACK_URL=${FX_FALLBACK_URL:-https://open.er-api.com/v6/latest/USD}
+      - FX_SYNC_CRON=${FX_SYNC_CRON:-0 8 * * *}
+      - FX_SYNC_ON_START=${FX_SYNC_ON_START:-false}
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_SECURE=${SMTP_SECURE:-true}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - TZ=${TZ:-Asia/Shanghai}
+    restart: unless-stopped

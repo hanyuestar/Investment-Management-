@@ -1,0 +1,24 @@
+{
+  "name": "investment-manager-web",
+  "version": "4.0.0",
+  "private": true,
+  "description": "个人投资资产管理系统 · 前端（Vue3 + Vite + Element Plus + ECharts）",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "echarts": "^5.5.1",
+    "element-plus": "^2.8.8",
+    "pinia": "^2.2.6",
+    "vue": "^3.5.13",
+    "vue-router": "^4.4.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.0",
+    "vite": "^5.4.11"
+  }
+}

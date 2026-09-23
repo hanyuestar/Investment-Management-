@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>投资管家 · 原型 v3</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --card:#fff; --line:#e4e8f0; --txt:#1c2536; --sub:#6b7688;
+    --primary:#1f3a5f; --accent:#17a2b8; --up:#e2453c; --down:#1c9c5a;
+    --shadow:0 1px 3px rgba(20,35,70,.06),0 8px 24px rgba(20,35,70,.06); --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+       background:var(--bg);color:var(--txt);font-size:14px}
+  .wrap{max-width:1300px;margin:0 auto;padding:18px}
+  .topbar{display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+    background:linear-gradient(100deg,#1f3a5f,#274c78);color:#fff;padding:14px 18px;border-radius:var(--radius);box-shadow:var(--shadow)}
+  .logo{font-size:17px;font-weight:700;letter-spacing:.5px}
+  .logo span{opacity:.6;font-weight:400;font-size:12px;margin-left:6px}
+  .fxpill{margin-left:auto;background:rgba(255,255,255,.14);padding:6px 12px;border-radius:20px;font-size:12.5px}
+  .fxpill b{color:#8fe3ef}
+  .topbtns{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:none;border-radius:9px;padding:8px 14px;font-size:13px;cursor:pointer;background:#eef2f8;color:var(--txt);transition:.15s;font-weight:500}
+  .btn:hover{filter:brightness(.96)}
+  .btn.primary{background:var(--accent);color:#fff}
+  .btn.warn{background:#fdece9;color:#c0392b}
+  .btn.ghost{background:rgba(255,255,255,.14);color:#fff}
+  .btn.sm{padding:5px 10px;font-size:12px;border-radius:7px}
+  .tabs{display:flex;gap:6px;margin:16px 0 14px;overflow-x:auto;padding-bottom:2px}
+  .tab{padding:9px 16px;border-radius:20px;background:#fff;border:1px solid var(--line);cursor:pointer;white-space:nowrap;font-size:13px;color:var(--sub);transition:.15s}
+  .tab.active{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:600}
+  .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+  .kpi{background:var(--card);border-radius:var(--radius);padding:14px 15px;box-shadow:var(--shadow);min-height:92px}
+  .kpi .k{font-size:12px;color:var(--sub);margin-bottom:8px}
+  .kpi .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
+  .kpi .s{font-size:11.5px;color:var(--sub);margin-top:5px}
+  .flash{animation:flash .6s ease}
+  @keyframes flash{0%{background:#fff7d6}100%{background:#fff}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+  .panel{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)}
+  .panel h3{margin:0 0 12px;font-size:14.5px}
+  .board{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:var(--shadow);margin-top:14px}
+  .board h3{margin:0 0 12px;font-size:14.5px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  .row{display:flex;align-items:center;gap:10px}
+  .spread{justify-content:space-between}
+  .muted{color:var(--sub);font-size:12.5px}
+  .up{color:var(--up);font-weight:600}
+  .down{color:var(--down);font-weight:600}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{color:var(--sub);font-weight:500;font-size:12px;background:#fafbfe}
+  tbody tr:hover{background:#f8fafd}
+  .num{font-variant-numeric:tabular-nums}
+  .act{display:flex;gap:5px;justify-content:flex-end}
+  .act button{padding:3px 9px;font-size:11.5px;border-radius:6px;border:1px solid var(--line);background:#fff;cursor:pointer;transition:.12s}
+  .act button:hover{filter:brightness(.95)}
+  .act button.b{color:#c0392b;border-color:#f3c9c3}
+  .act button.s{color:#1c7a4b;border-color:#bde5cd}
+  .act button.d{color:#c0651a;border-color:#f3d9b8}
+  .acard{border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px;background:#fff}
+  .acard .head{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .badge{font-size:11px;padding:2px 8px;border-radius:20px;background:#eef2f8;color:var(--sub)}
+  .badge.stock{background:#e8f0fe;color:#1a56db}
+  .badge.fund{background:#fdf0e4;color:#c0651a}
+  .badge.wealth{background:#e9f7ef;color:#1c7a4b}
+  .badge.bond{background:#f0ecfd;color:#5b46c9}
+  .badge.USD{background:#e8fbf9;color:#0e8a7d}
+  .badge.CNY{background:#f5f5f5;color:#666}
+  .badge.CN{background:#fdece9;color:#c0392b}
+  .badge.US{background:#e8f0fe;color:#1a56db}
+  .badge.acc{background:#eef2f8;color:#455468}
+  .acard .metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}
+  .metric .k{font-size:11px;color:var(--sub)}
+  .metric .v{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:3px}
+  .legend{font-size:11.5px;color:var(--sub);margin-top:8px;line-height:1.6}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:10px;overflow-x:auto}
+  .barwrap{display:flex;flex-direction:column;align-items:center;min-width:52px;flex:1}
+  .bar{width:26px;border-radius:5px 5px 0 0;background:var(--accent);transition:.3s}
+  .bar.neg{background:var(--down)}
+  .barlab{font-size:10.5px;color:var(--sub);margin-top:6px;white-space:nowrap}
+  .barval{font-size:10px;color:var(--sub)}
+  .dist{display:flex;height:14px;border-radius:8px;overflow:hidden;margin:8px 0 10px}
+  .dist i{display:block;height:100%}
+  .mask{position:fixed;inset:0;background:rgba(18,28,50,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
+  .mask.show{display:flex}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:540px;max-height:90vh;overflow:auto;padding:20px}
+  .modal h3{margin:0 0 16px;font-size:16px}
+  .field{margin-bottom:13px}
+  .field label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:5px}
+  .field input,.field select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;background:#fbfcfe}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent);background:#fff}
+  .f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .hint{font-size:11.5px;color:var(--sub);margin-top:5px;line-height:1.5}
+  .hint.warn{color:#c0392b}
+  .modal .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .empty{text-align:center;padding:40px 10px;color:var(--sub)}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(20px);background:#22314d;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;opacity:0;transition:.25s;z-index:99}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+  .filters select,.filters input{padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:12.5px;background:#fff}
+  .tag{font-size:10.5px;padding:1px 6px;border-radius:6px;background:#fdece9;color:#c0392b;margin-left:5px}
+  .segmented{display:inline-flex;background:#eef2f8;border-radius:9px;padding:3px;gap:2px}
+  .segmented button{border:none;background:transparent;padding:6px 13px;border-radius:7px;font-size:12.5px;cursor:pointer;color:var(--sub)}
+  .segmented button.on{background:#fff;color:var(--primary);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .switch{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;margin-bottom:11px;cursor:pointer;background:#fbfcfe}
+  .switch .txt{flex:1}
+  .switch .txt b{font-size:13.5px}
+  .switch .txt div{font-size:11.5px;color:var(--sub);margin-top:3px}
+  .toggle{width:46px;height:26px;border-radius:20px;background:#cfd8e5;position:relative;transition:.2s;flex:none}
+  .toggle::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .toggle.on{background:var(--accent)}
+  .toggle.on::after{left:23px}
+  .optlist{display:flex;gap:10px;flex-wrap:wrap}
+  .opt{flex:1;min-width:180px;border:1.5px solid var(--line);border-radius:11px;padding:13px;cursor:pointer;background:#fff;transition:.15s}
+  .opt.on{border-color:var(--accent);background:#f0fbfc}
+  .opt b{font-size:13.5px;display:block;margin-bottom:4px}
+  .opt div{font-size:11.5px;color:var(--sub);line-height:1.5}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}.acard .metrics{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">投资管家 <span>Investment Manager v3</span></div>
+    <div class="fxpill">基准货币 <b>¥ CNY</b> | 1 USD = <b id="topFx">-</b> CNY</div>
+    <div class="topbtns">
+      <button class="btn ghost" onclick="openFx()">汇率管理</button>
+      <button class="btn ghost" onclick="exportJSON()">导出</button>
+      <button class="btn ghost" onclick="document.getElementById('imp').click()">导入</button>
+      <button class="btn ghost" onclick="openAccount()">+ 账户</button>
+      <button class="btn primary" onclick="openAsset()">+ 新增投资</button>
+      <input id="imp" type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="tabs" id="tabs"></div>
+  <div id="view"></div>
+</div>
+
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================ 常量 ============================ */
+const KEY='invest_manager_v3';
+const TYPES={stock:'股票',fund:'基金',wealth:'理财',bond:'债券'};
+const MARKETS={CN:'A股',US:'美股'};
+const ACCKIND={broker:'券商',bank:'银行',other:'其他'};
+const STK_SIDE={buy:'买入',sell:'卖出',div:'现金分红',bonus:'送股/转股',split:'拆分'};
+const FLOW_KIND={invest:'投入',redeem:'赎回',income:'分红/利息'};
+const TODAY=()=>new Date().toISOString().slice(0,10);
+const MONTH=()=>TODAY().slice(0,7);
+const uid=p=>(p||'x')+Math.random().toString(36).slice(2,8);
+const round2=n=>Math.round((+n||0)*100)/100;
+
+/* ============================ 种子数据 ============================ */
+function seed(){
+  return {
+    settings:{costMethod:'wavg',dividendReducesCost:false,
+      fxSource:{enabled:true,provider:'frankfurter.app',providerName:'Frankfurter(欧洲央行数据)',fallback:'open.er-api.com',lastDate:'2026-09-21',lastRate:6.6954,lastFetched:'2026-09-22 08:05',manualTakesPriority:true}},
+    fx:[{date:'2026-01-01',rate:7.10,note:'初始汇率',source:'manual'},{date:'2026-06-01',rate:7.28,note:'年中调整',source:'manual'},
+        {date:'2026-09-21',rate:6.6954,note:'自动同步',source:'auto'}],
+    accounts:[
+      {id:'acc1',name:'华泰证券',kind:'broker',currency:'CNY',note:'A股主账户'},
+      {id:'acc2',name:'招商银行',kind:'bank',currency:'CNY',note:'理财/债券'},
+      {id:'acc3',name:'富途证券',kind:'broker',currency:'USD',note:'美股账户'}
+    ],
+    assets:[
+      {id:'a1',accountId:'acc1',name:'贵州茅台',code:'600519',market:'CN',type:'stock',currency:'CNY',price:1330},
+      {id:'a2',accountId:'acc2',name:'宁德时代',code:'300750',market:'CN',type:'stock',currency:'CNY',price:210},
+      {id:'a3',accountId:'acc3',name:'标普500 ETF',code:'VOO',market:'US',type:'fund',currency:'USD',price:0,marketValue:8600},
+      {id:'a4',accountId:'acc2',name:'招银理财·稳健',code:'',market:'',type:'wealth',currency:'CNY',price:0,marketValue:51000},
+      {id:'a5',accountId:'acc2',name:'国债2401',code:'',market:'',type:'bond',currency:'CNY',price:0,marketValue:20300}
+    ],
+    events:[
+      {id:uid('e'),assetId:'a1',date:'2026-02-10',kind:'buy',side:'buy',qty:100,price:1500,fee:15,fx:1,note:'建仓'},
+      {id:uid('e'),assetId:'a1',date:'2026-03-12',kind:'buy',side:'buy',qty:100,price:1450,fee:15,fx:1,note:'补仓'},
+      {id:uid('e'),assetId:'a1',date:'2026-03-20',kind:'sell',side:'sell',qty:100,price:1560,fee:17,fx:1,isT:1,note:'T出'},
+      {id:uid('e'),assetId:'a1',date:'2026-06-30',kind:'div',side:'div',amount:300,fx:1,note:'现金分红'},
+      {id:uid('e'),assetId:'a1',date:'2026-07-10',kind:'bonus',side:'bonus',qty:20,fx:1,note:'10送2'},
+      {id:uid('e'),assetId:'a1',date:'2026-08-15',kind:'buy',side:'buy',qty:100,price:1400,fee:15,fx:1,note:'回调买入'},
+      {id:uid('e'),assetId:'a2',date:'2026-05-08',kind:'buy',side:'buy',qty:200,price:180,fee:20,fx:1,note:'买入'},
+      {id:uid('e'),assetId:'a3',date:'2026-01-15',kind:'invest',amount:5000,fee:0,fx:7.10,note:'美股权重'},
+      {id:uid('e'),assetId:'a3',date:'2026-07-15',kind:'invest',amount:3000,fee:0,fx:7.28,note:'加仓'},
+      {id:uid('e'),assetId:'a3',date:'2026-08-01',kind:'income',amount:60,fee:0,fx:7.28,note:'分红'},
+      {id:uid('e'),assetId:'a4',date:'2026-01-20',kind:'invest',amount:50000,fee:0,fx:1,note:''},
+      {id:uid('e'),assetId:'a4',date:'2026-06-20',kind:'income',amount:1200,fee:0,fx:1,note:'半年利息'},
+      {id:uid('e'),assetId:'a5',date:'2026-04-01',kind:'invest',amount:20000,fee:0,fx:1,note:''}
+    ],
+    snapshots:[
+      {month:'2026-01',total:86000},{month:'2026-02',total:237000},{month:'2026-03',total:236500},
+      {month:'2026-04',total:246000},{month:'2026-05',total:289000},{month:'2026-06',total:291500},
+      {month:'2026-07',total:314500},{month:'2026-08',total:520000}
+    ],
+    cashFlows:[
+      {id:uid('c'),accountId:'acc1',date:'2026-02-01',kind:'deposit',amount:300000,fx:1,note:'券商入金'},
+      {id:uid('c'),accountId:'acc2',date:'2026-01-15',kind:'deposit',amount:90000,fx:1,note:'银行入金'},
+      {id:uid('c'),accountId:'acc2',date:'2026-05-01',kind:'withdraw',amount:20000,fx:1,note:'取现'},
+      {id:uid('c'),accountId:'acc3',date:'2026-01-10',kind:'deposit',amount:8000,fx:7.10,note:'美元入金'}
+    ],
+    benchSeries:[
+      {date:'2026-01',value:3800},{date:'2026-02',value:3920},{date:'2026-03',value:3860},
+      {date:'2026-04',value:4010},{date:'2026-05',value:4180},{date:'2026-06',value:4090},
+      {date:'2026-07',value:4260},{date:'2026-08',value:4430}
+    ],
+    taxRules:{cnDiv:{le1m:0.20,m1to1y:0.10,gt1y:0},cnCapGain:0,usDiv:0.30,usCapGain:0.15},
+    dcaPlans:[{id:uid('d'),assetId:'a3',startMonth:'2026-09',months:12,day:15,amount:400,note:'标普500月定投',active:true}]
+  };
+}
+function load(){ try{const r=localStorage.getItem(KEY); if(r)return JSON.parse(r);}catch(e){} return seed(); }
+function save(s){ S=s||S; try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+let S = load(); save(S);
+
+/* ============================ 计算引擎(与 server/calc.js 同源) ============================ */
+function currentFx(S){ const t=TODAY();
+  // 同一日期:管理员手动录入(source=manual)优先于自动汇率(source=auto)
+  const f=S.fx.filter(r=>r.date<=t).sort((a,b)=> a.date<b.date?-1:(a.date>b.date?1:((a.source==='manual'?1:0)-(b.source==='manual'?1:0))));
+  return f.length?f[f.length-1].rate:7.1; }
+const assetFx=(a,S)=> a.currency==='USD'?currentFx(S):1;
+function eventsOf(S,aid){ return S.events.filter(e=>e.assetId===aid).sort((x,y)=>x.date<y.date?-1:(x.date>y.date?1:0)); }
+function cfgOf(S){ return {costMethod:'wavg',dividendReducesCost:false,...(S.settings||{})}; }
+
+function calcAsset(a,S){
+  const cfg=cfgOf(S), evs=eventsOf(S,a.id);
+  return a.type==='stock'?calcStock(a,evs,cfg,S):calcFlow(a,evs,S);
+}
+function calcStock(a,evs,cfg,S){
+  const isFifo=cfg.costMethod==='fifo', divReduce=!!cfg.dividendReducesCost;
+  let qty=0, lots=[], costLocal=0, costCNY=0, buyQty=0, buyAmtCNY=0, buyAmtLocal=0, realLocal=0, realCNY=0, divLocal=0, divCNY=0;
+  const byMonth={}; const addM=(m,k,v)=>{ if(!m)return; byMonth[m]=byMonth[m]||{sell:0,div:0}; byMonth[m][k]=round2(byMonth[m][k]+v); };
+  let realizedCostCNY=0; // FIFO 已结转成本
+  for(const t of evs){
+    const f=t.fx||1;
+    if(t.side==='buy'){
+      const g=t.qty*t.price; qty+=t.qty; costLocal+=g+(t.fee||0); costCNY+=(g+(t.fee||0))*f;
+      lots.push({q:t.qty,price:t.price,fee:t.fee||0,fx:f}); buyQty+=t.qty; buyAmtCNY+=(g+(t.fee||0))*f; buyAmtLocal+=g+(t.fee||0);
+    } else if(t.side==='sell'){
+      const sellQty=t.qty, fee=t.fee||0;
+      let rl=0, rc=0;
+      if(isFifo){
+        let need=sellQty;
+        while(need>1e-9 && lots.length){
+          const lot=lots[0]; const take=Math.min(need,lot.q);
+          const uL=lot.price+(lot.fee||0)/lot.q, uC=uL*lot.fx;
+          rl+=t.price*take-uL*take; rc+=t.price*take*f-uC*take;
+          lot.q-=take; need-=take; if(lot.q<=1e-9)lots.shift();
+        }
+        rl-=fee; rc-=fee*f;
+        costLocal=lots.reduce((s,l)=>s+l.q*(l.price+(l.fee||0)/l.q),0);
+        costCNY=lots.reduce((s,l)=>s+l.q*((l.price+(l.fee||0)/l.q)*l.fx),0);
+        qty-=sellQty;
+      } else {
+        const avgL=qty>0?costLocal/qty:0, avgC=qty>0?costCNY/qty:0;
+        rl=t.qty*t.price-fee-avgL*sellQty; rc=(t.qty*t.price-fee)*f-avgC*sellQty;
+        costLocal-=avgL*sellQty; costCNY-=avgC*sellQty; qty-=sellQty;
+      }
+      realLocal+=rl; realCNY+=rc; addM(t.date.slice(0,7),'sell',rc);
+    } else if(t.side==='div'){
+      const v=(t.amount||0)*f;
+      if(divReduce){ costLocal-=(t.amount||0); costCNY-=v; }
+      else { divLocal+=(t.amount||0); divCNY+=v; addM(t.date.slice(0,7),'div',v); }
+    } else if(t.side==='bonus'){
+      const add=t.qty||0; qty+=add;
+      if(isFifo){ if(lots.length)lots[lots.length-1].q+=add; else lots.push({q:add,price:0,fee:0,fx:f}); }
+    } else if(t.side==='split'){
+      const r=t.ratio||1; qty*=r;
+      if(isFifo) lots.forEach(l=>{l.q*=r;l.price/=r;});
+    }
+  }
+  const fxNow=assetFx(a,S), px=a.price||0, mvLocal=qty*px, mvCNY=mvLocal*(a.currency==='USD'?fxNow:1);
+  const unrealCNY=mvCNY-costCNY, totalCNY=realCNY+divCNY+unrealCNY;
+  return {type:'stock',qty:+qty.toFixed(6),costLocal:round2(costLocal),costCNY:round2(costCNY),
+    mvLocal:round2(mvLocal),mvCNY:round2(mvCNY),realLocal:round2(realLocal),realCNY:round2(realCNY),
+    divCNY:round2(divCNY),unrealCNY:round2(unrealCNY),totalCNY:round2(totalCNY),
+    avgLocal:qty>0?costLocal/qty:0, avgCNY:qty>0?costCNY/qty:0,
+    buyAvgCNY:buyQty>0?buyAmtCNY/buyQty:0, buyAvgLocal:buyQty>0?buyAmtLocal/buyQty:0, buyQty, buyAmtCNY:round2(buyAmtCNY), buyAmtLocal:round2(buyAmtLocal),
+    rate:buyAmtCNY>0?totalCNY/buyAmtCNY:0, fxUsed:fxNow, byMonth};
+}
+function calcFlow(a,evs,S){
+  let investCNY=0,redeemCNY=0,incomeCNY=0;
+  for(const f of evs){ const v=(f.amount||0)*(f.fx||1);
+    if(f.kind==='invest')investCNY+=v; else if(f.kind==='redeem')redeemCNY+=v; else if(f.kind==='income')incomeCNY+=v; }
+  const mvCNY=round2((a.marketValue||0)*assetFx(a,S));
+  const total=round2(redeemCNY+incomeCNY+mvCNY-investCNY);
+  return {type:a.type,investCNY:round2(investCNY),redeemCNY:round2(redeemCNY),incomeCNY:round2(incomeCNY),
+    mvCNY,unrealCNY:round2(mvCNY-(investCNY-redeemCNY)),total,rate:investCNY>0?total/investCNY:0,fxUsed:assetFx(a,S),totalCNY:total};
+}
+const assetTotal=r=> r.totalCNY!==undefined? r.totalCNY : r.total;
+
+function summary(S,opts){
+  const accountId=opts&&opts.accountId;
+  const assets=accountId? S.assets.filter(a=>a.accountId===accountId):S.assets;
+  let total=0,invest=0,real=0,unreal=0,cashIncome=0;
+  const rows=assets.map(a=>{
+    const r=calcAsset(a,S), mv=r.mvCNY||0; total+=mv;
+    if(a.type==='stock'){ invest+=r.buyAmtCNY; real+=r.realCNY+r.divCNY; unreal+=r.unrealCNY; }
+    else { invest+=r.investCNY; cashIncome+=r.incomeCNY; real+=r.incomeCNY; unreal+=r.unrealCNY; }
+    return {a,r,mv,profit:assetTotal(r)};
+  });
+  return {total:round2(total),invest:round2(invest),real:round2(real),unreal:round2(unreal),
+    cashIncome:round2(cashIncome),profit:round2(real+unreal),
+    rate:invest>0?(real+unreal)/invest:0, rows};
+}
+function accountSummary(S){
+  const out=S.accounts.map(acc=>{
+    const assets=S.assets.filter(a=>a.accountId===acc.id);
+    let mv=0,invest=0,profit=0;
+    assets.forEach(a=>{ const r=calcAsset(a,S); mv+=r.mvCNY; profit+=assetTotal(r); invest+=a.type==='stock'?r.buyAmtCNY:r.investCNY; });
+    return {account:acc,count:assets.length,mv:round2(mv),invest:round2(invest),profit:round2(profit),rate:invest>0?profit/invest:0};
+  });
+  const t=out.reduce((s,x)=>({mv:s.mv+x.mv,invest:s.invest+x.invest,profit:s.profit+x.profit}),{mv:0,invest:0,profit:0});
+  return {byAccount:out,total:{mv:round2(t.mv),invest:round2(t.invest),profit:round2(t.profit),rate:t.invest>0?t.profit/t.invest:0}};
+}
+function securityAggregation(S){
+  const key=a=>(a.market||'')+'|'+(a.code||a.name);
+  const map={};
+  S.assets.forEach(a=>{
+    const r=calcAsset(a,S), k=key(a);
+    map[k]=map[k]||{name:a.name,code:a.code,market:a.market,type:a.type,currency:a.currency,qty:0,costCNY:0,mvCNY:0,totalCNY:0,accounts:[]};
+    const m=map[k];
+    if(a.type==='stock'){ m.qty+=r.qty; m.costCNY+=r.costCNY; }
+    m.mvCNY+=r.mvCNY; m.totalCNY+=assetTotal(r);
+    m.accounts.push({accountId:a.accountId,assetId:a.id,qty:a.type==='stock'?r.qty:(a.marketValue||0)});
+  });
+  return Object.values(map).map(m=>({...m,qty:+m.qty.toFixed(6),costCNY:round2(m.costCNY),mvCNY:round2(m.mvCNY),
+    totalCNY:round2(m.totalCNY),avgCNY:m.qty>0?m.costCNY/m.qty:0,unrealCNY:round2(m.mvCNY-m.costCNY),
+    rate:m.costCNY>0?m.totalCNY/m.costCNY:0}));
+}
+function realizedByMonth(S,opts){ const accountId=opts&&opts.accountId; const m={}; const add=(k,v)=>{if(k)m[k]=round2((m[k]||0)+v);};
+  S.assets.filter(a=>!accountId||a.accountId===accountId).forEach(a=>{
+    if(a.type==='stock'){ const r=calcAsset(a,S); for(const mm in r.byMonth) add(mm,r.byMonth[mm].sell+r.byMonth[mm].div); }
+    else eventsOf(S,a.id).forEach(f=>{ if(f.kind==='income'||f.kind==='redeem') add(f.date.slice(0,7),(f.amount||0)*(f.fx||1)); });
+  }); return m; }
+function netInvestByMonth(S,opts){ const accountId=opts&&opts.accountId; const m={}; const add=(k,v)=>{if(k)m[k]=round2((m[k]||0)+v);};
+  S.assets.filter(a=>!accountId||a.accountId===accountId).forEach(a=>{
+    if(a.type==='stock') eventsOf(S,a.id).forEach(t=>{ if(t.side==='buy')add(t.date.slice(0,7),(t.qty*t.price+(t.fee||0))*t.fx); else if(t.side==='sell')add(t.date.slice(0,7),-(t.qty*t.price-(t.fee||0))*t.fx); });
+    else eventsOf(S,a.id).forEach(f=>{ if(f.kind==='invest'||f.kind==='redeem')add(f.date.slice(0,7),(f.kind==='invest'?1:-1)*(f.amount||0)*(f.fx||1)); });
+  }); return m; }
+function monthRows(S,opts){ const real=realizedByMonth(S,opts),net=netInvestByMonth(S,opts);
+  const snap={}; S.snapshots.forEach(s=>snap[s.month]=s.total);
+  const months=[...new Set([...Object.keys(real),...Object.keys(snap),...Object.keys(net)])].sort();
+  const out=[]; let prev=null;
+  for(const mm of months){ const s=snap[mm]; let floatTotal=null;
+    if(s!==undefined&&prev!==null) floatTotal=round2((real[mm]||0)+(s-prev-(net[mm]||0)));
+    out.push({month:mm,real:round2(real[mm]||0),net:round2(net[mm]||0),snap:s,floatTotal});
+    if(s!==undefined)prev=s; }
+  return out; }
+function yearRows(S,opts){ const y={}; monthRows(S,opts).forEach(r=>{ const k=r.month.slice(0,4); y[k]=y[k]||{year:k,real:0,net:0,floatTotal:0,hasF:false};
+  y[k].real+=r.real; y[k].net+=r.net; if(r.floatTotal!==null){y[k].floatTotal+=r.floatTotal;y[k].hasF=true;} });
+  return Object.values(y).sort((a,b)=>a.year<b.year?-1:1).map(x=>({...x,real:round2(x.real),net:round2(x.net),floatTotal:round2(x.floatTotal)})); }
+
+/* ============================ v4 引擎:绩效/配置/风控/税务/定投/预警/出入金 ============================ */
+function xirr(flows,guess){
+  if(!flows||flows.length<2)return null;
+  const t0=new Date(flows[0].date).getTime(), yrs=d=>(new Date(d).getTime()-t0)/31536000000;
+  const npv=r=>flows.reduce((s,f)=>s+f.amount/Math.pow(1+r,yrs(f.date)),0);
+  let r=guess==null?0.1:guess;
+  for(let i=0;i<100;i++){ const f=npv(r); if(Math.abs(f)<1e-6)return r;
+    const df=(npv(r+1e-7)-f)/1e-7; if(!isFinite(df)||Math.abs(df)<1e-12)break;
+    const next=r-f/df; if(!isFinite(next))break; if(Math.abs(next-r)<1e-10)return next; r=Math.max(-0.9999,Math.min(100,next)); }
+  let lo=-0.9999,hi=100,flo=npv(lo),fhi=npv(hi);
+  if(!isFinite(flo)||!isFinite(fhi)||flo*fhi>0)return null;
+  for(let i=0;i<300;i++){ const mid=(lo+hi)/2,fm=npv(mid); if(Math.abs(fm)<1e-6||(hi-lo)<1e-12)return mid; if(flo*fm<0){hi=mid;fhi=fm;}else{lo=mid;flo=fm;} }
+  return (lo+hi)/2; }
+function portfolioFlows(S,opts){ const accountId=opts&&opts.accountId, asOf=(opts&&opts.asOf)||TODAY(); const flows=[];
+  S.assets.filter(a=>!accountId||a.accountId===accountId).forEach(a=>{ eventsOf(S,a.id).forEach(e=>{ const f=e.fx||1; let amt=0;
+    if(a.type==='stock'){ if(e.side==='buy')amt=-((e.qty*e.price)+(e.fee||0))*f; else if(e.side==='sell')amt=((e.qty*e.price)-(e.fee||0))*f; else if(e.side==='div')amt=(e.amount||0)*f; }
+    else { if(e.kind==='invest')amt=-((e.amount||0)+(e.fee||0))*f; else if(e.kind==='redeem')amt=(e.amount||0)*f; else if(e.kind==='income')amt=(e.amount||0)*f; }
+    if(Math.abs(amt)>1e-9)flows.push({date:e.date,amount:amt,assetId:a.id}); }); });
+  flows.sort((x,y)=>x.date<y.date?-1:(x.date>y.date?1:0));
+  const mv=summary(S,opts).total; if(mv>0)flows.push({date:asOf,amount:mv,assetId:null,terminal:true});
+  return flows; }
+function portfolioXirr(S,opts){ const flows=portfolioFlows(S,opts); if(flows.length<2)return null;
+  if(flows[0].amount>=0)flows.unshift({date:flows[0].date,amount:-1e-6}); return xirr(flows); }
+function annualized(total,days){ if(!(days>0)||1+total<=0)return null; return Math.pow(1+total,365/days)-1; }
+function holdingDays(S,opts){ const accountId=opts&&opts.accountId; let first=null;
+  S.assets.filter(a=>!accountId||a.accountId===accountId).forEach(a=>{ const e=eventsOf(S,a.id)[0]; if(e&&(!first||e.date<first))first=e.date; });
+  if(!first)return 0; return Math.max(1,Math.round((new Date(TODAY())-new Date(first))/86400000)); }
+function twr(S,opts){ const rows=monthRows(S,opts).filter(r=>r.snap!==undefined); if(rows.length<2)return null; let factor=1;
+  for(let i=1;i<rows.length;i++){ const denom=rows[i-1].snap+(rows[i].net||0); if(denom>0)factor*=rows[i].snap/denom; } return factor-1; }
+const ALLOC_DEFAULT={stock:0.6,fund:0.2,wealth:0.15,bond:0.05};
+function allocation(S,targets,opts){ const s=summary(S,opts), tg={...ALLOC_DEFAULT,...(targets||{})}; const byType={};
+  s.rows.forEach(r=>{ byType[r.a.type]=(byType[r.a.type]||0)+r.mv; }); const total=s.total||0;
+  const rows=['stock','fund','wealth','bond'].map(t=>{ const cur=byType[t]||0;
+    return {type:t,cur:round2(cur),curPct:total>0?cur/total:0,tgtPct:tg[t]||0,tgtAmt:round2(total*(tg[t]||0)),diff:round2(total*(tg[t]||0)-cur)}; });
+  const drift=rows.reduce((a,r)=>a+Math.abs(r.diff),0)/2;
+  return {total:round2(total),rows,drift:round2(drift),driftPct:total>0?drift/total:0}; }
+function concentration(S,opts){ const warnSingle=(opts&&opts.warnSingle)||0.2, warnTop5=(opts&&opts.warnTop5)||0.6;
+  const s=summary(S,opts), total=s.total||1; const list=[...s.rows].sort((a,b)=>b.mv-a.mv).map(r=>({name:r.a.name,type:r.a.type,mv:r.mv,pct:r.mv/total}));
+  const top5=list.slice(0,5).reduce((x,r)=>x+r.pct,0); const byType={}; s.rows.forEach(r=>{ byType[r.a.type]=(byType[r.a.type]||0)+r.mv/total; });
+  const alerts=[];
+  if(list[0]&&list[0].pct>warnSingle)alerts.push(`单标的集中:${list[0].name} 占 ${(list[0].pct*100).toFixed(1)}%(阈值 ${warnSingle*100}%)`);
+  if(top5>warnTop5)alerts.push(`前5大持仓合计 ${(top5*100).toFixed(1)}%(阈值 ${warnTop5*100}%)`);
+  if(byType.stock>0.7)alerts.push(`股票类占比 ${(byType.stock*100).toFixed(1)}%,权益风险偏高`);
+  return {list,top1:list[0]?list[0].pct:0,top5,byType,warnSingle,warnTop5,alerts}; }
+function benchmark(S,benchSeries,opts){ const snaps=monthRows(S,opts).filter(r=>r.snap!==undefined);
+  if(snaps.length<2||!benchSeries||benchSeries.length<2)return null;
+  const first=snaps[0],last=snaps[snaps.length-1]; const bAt=m=>{const x=benchSeries.filter(b=>b.date.slice(0,7)<=m).pop();return x?x.value:null;};
+  const b0=bAt(first.month),b1=bAt(last.month); let nav=1; const series=[];
+  snaps.forEach((r,i)=>{ if(i>0){const denom=snaps[i-1].snap+(r.net||0); if(denom>0)nav*=r.snap/denom;} series.push({month:r.month,port:nav-1,bench:(b0&&bAt(r.month))?bAt(r.month)/b0-1:null}); });
+  const portRet=b0?nav-1:null, benchRet=(b0&&b1)?b1/b0-1:null;
+  return {portRet,benchRet,alpha:(portRet!=null&&benchRet!=null)?portRet-benchRet:null,series}; }
+const TAX_DEFAULT={cnDiv:{le1m:0.20,m1to1y:0.10,gt1y:0},cnCapGain:0,usDiv:0.30,usCapGain:0};
+function realizedGainsByYear(S,opts){ const accountId=opts&&opts.accountId; const out={CN:{},US:{}};
+  S.assets.filter(a=>a.type==='stock'&&(!accountId||a.accountId===accountId)).forEach(a=>{ const mk=a.market==='US'?'US':'CN'; let qty=0,costCNY=0;
+    eventsOf(S,a.id).forEach(e=>{ const f=e.fx||1;
+      if(e.side==='buy'){qty+=e.qty;costCNY+=(e.qty*e.price+(e.fee||0))*f;}
+      else if(e.side==='sell'){ const avg=qty>0?costCNY/qty:0; const gain=((e.qty*e.price)-(e.fee||0))*f-avg*e.qty; costCNY-=avg*e.qty; qty-=e.qty; const y=e.date.slice(0,4); out[mk][y]=round2((out[mk][y]||0)+gain); }
+      else if(e.side==='bonus')qty+=(e.qty||0); else if(e.side==='split')qty*=(e.ratio||1); }); });
+  return out; }
+function taxEstimate(S,rules,opts){ const R={...TAX_DEFAULT,...(rules||{})}; const accountId=opts&&opts.accountId; const dividends=[];
+  S.assets.filter(a=>a.type==='stock'&&(!accountId||a.accountId===accountId)).forEach(a=>{ const isUS=a.market==='US'; const buys=eventsOf(S,a.id).filter(e=>e.side==='buy');
+    eventsOf(S,a.id).filter(e=>e.side==='div').forEach(e=>{ const amtCNY=(e.amount||0)*(e.fx||1); let rate;
+      if(isUS)rate=R.usDiv; else { const prior=buys.filter(b=>b.date<=e.date); const firstBuy=prior[0]?prior[0].date:null; const days=firstBuy?(new Date(e.date)-new Date(firstBuy))/86400000:9999; rate=days<=30?R.cnDiv.le1m:days<=365?R.cnDiv.m1to1y:R.cnDiv.gt1y; }
+      dividends.push({asset:a.name,market:isUS?'US':'CN',date:e.date,amount:round2(amtCNY),rate,tax:round2(amtCNY*rate),net:round2(amtCNY*(1-rate))}); }); });
+  const gains=realizedGainsByYear(S,opts); const capGain={CN:{gain:0,tax:0},US:{gain:0,tax:0}};
+  Object.keys(gains).forEach(mk=>Object.keys(gains[mk]).forEach(y=>{ const g=gains[mk][y]; capGain[mk].gain=round2(capGain[mk].gain+g); if(g>0)capGain[mk].tax=round2(capGain[mk].tax+g*(mk==='US'?R.usCapGain:R.cnCapGain)); }));
+  const divTax=round2(dividends.reduce((s,d)=>s+d.tax,0));
+  return {dividends,capGain,divTax,capGainTax:round2(capGain.CN.tax+capGain.US.tax),totalTax:round2(divTax+capGain.CN.tax+capGain.US.tax),rules:R}; }
+function dcaGenerate(plan){ const out=[]; const [y0,m0]=(plan.startMonth||'2026-01').split('-').map(Number);
+  for(let i=0;i<(plan.months||12);i++){ const m=(m0-1)+i; const y=y0+Math.floor(m/12), mm=(m%12)+1;
+    out.push({date:`${y}-${String(mm).padStart(2,'0')}-${String(plan.day||1).padStart(2,'0')}`,kind:'invest',amount:plan.amount,fee:0,fx:plan.fx||1,note:plan.note||'定投'}); }
+  return out; }
+function checkAlerts(S,opts){ const out=[];
+  S.assets.forEach(a=>{ const al=a.alerts; if(!al)return; const r=calcAsset(a,S), price=a.price||0;
+    if(al.takeProfitPrice&&price>=al.takeProfitPrice)out.push({asset:a.name,level:'止盈',msg:`现价 ${price} 达到止盈线 ${al.takeProfitPrice}`});
+    if(al.stopLossPrice&&price<=al.stopLossPrice)out.push({asset:a.name,level:'止损',msg:`现价 ${price} 跌破止损线 ${al.stopLossPrice}`});
+    if(al.takeProfitRate&&r.rate>=al.takeProfitRate)out.push({asset:a.name,level:'止盈',msg:`收益率 ${(r.rate*100).toFixed(1)}% 达 ${(al.takeProfitRate*100)}%`});
+    if(al.stopLossRate&&r.rate<=-al.stopLossRate)out.push({asset:a.name,level:'止损',msg:`亏损 ${(r.rate*100).toFixed(1)}% 触 ${(-al.stopLossRate*100)}%`}); });
+  return out; }
+function cashFlowSummary(S,opts){ const accountId=opts&&opts.accountId; let dep=0,wd=0;
+  (S.cashFlows||[]).filter(c=>!accountId||c.accountId===accountId).forEach(c=>{ const v=(c.amount||0)*(c.fx||1); if(c.kind==='deposit')dep+=v; else wd+=v; });
+  return {deposit:round2(dep),withdraw:round2(wd),net:round2(dep-wd)}; }
+
+/* ============================ 工具 ============================ */
+const money=(n,cur='CNY')=>(cur==='USD'?'$':'¥')+(+n||0).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fxColor=n=> n>1e-9?'up':(n<-1e-9?'down':'');
+const accName=id=>{const a=S.accounts.find(x=>x.id===id);return a?a.name:'-';};
+
+/* ============================ UI ============================ */
+const TABS=[['dash','总览'],['hold','持仓'],['acc','账户'],['tx','交易流水'],['perf','绩效'],['alloc','配置'],['risk','风险'],['tax','税务'],['plan','定投'],['cash','出入金'],['rep','收益报表'],['fx','汇率'],['set','设置'],['data','数据']];
+let TAB='dash';
+let FILTER={type:'all',ccy:'all',acct:'all',kw:''};
+let VIEW={mode:'account'};   // account | merged
+let __postPrompt=null;       // 分红/送股/拆分后的除权提醒
+try{ const t=new URLSearchParams(location.search).get('tab'); if(t&&TABS.some(x=>x[0]===t))TAB=t; }catch(e){}
+
+function render(){
+  document.getElementById('topFx').textContent=currentFx(S).toFixed(4);
+  renderKpis(); renderTabs();
+  document.getElementById('view').innerHTML =
+    TAB==='dash'?viewDash():TAB==='hold'?viewHold():TAB==='acc'?viewAcc():TAB==='tx'?viewTx():
+    TAB==='perf'?viewPerf():TAB==='alloc'?viewAlloc():TAB==='risk'?viewRisk():TAB==='tax'?viewTax():
+    TAB==='plan'?viewPlan():TAB==='cash'?viewCash():
+    TAB==='rep'?viewRep():TAB==='fx'?viewFx():TAB==='set'?viewSet():viewData();
+}
+function renderKpis(){
+  const s=summary(S), mr=monthRows(S), yr=yearRows(S);
+  const mNow=mr.find(r=>r.month===MONTH()), yNow=yr.find(r=>r.year===MONTH().slice(0,4));
+  const xi=portfolioXirr(S), dd=holdingDays(S), tw=twr(S);
+  const bm=benchmark(S,S.benchSeries||[]);
+  const cards=[
+    ['总资产（￥）',money(s.total),'含未实现市值'],
+    ['累计投入（￥）',money(s.invest),'含历史汇率锁定'],
+    ['累计收益（￥）',money(s.profit),`简单收益率 ${(s.rate*100).toFixed(2)}%`],
+    ['★ XIRR 年化',xi!=null?(xi*100).toFixed(2)+'%':'—',`资金加权·持有 ${dd} 天`],
+    ['已实现 / 浮动',money(s.real)+' / '+money(s.unreal),'按当前成本口径'],
+    ['TWR 时间加权',tw!=null?(tw*100).toFixed(2)+'%':'—','需月末快照'],
+    ['基准超额 α',bm&&bm.alpha!=null?((bm.alpha*100).toFixed(2)+'%'):'—','vs 沪深300'],
+    ['本年收益（￥）',yNow?money(yNow.hasF?yNow.floatTotal:yNow.real):'—','']
+  ];
+  document.getElementById('kpis').innerHTML=cards.map((c,i)=>`
+    <div class="kpi ${i<3?'flash':''}"><div class="k">${c[0]}</div>
+      <div class="v ${i===2?fxColor(s.profit):(i===3?fxColor(xi||0):'')}">${c[1]}</div><div class="s">${c[2]||''}</div></div>`).join('');
+}
+function renderTabs(){ document.getElementById('tabs').innerHTML=TABS.map(([k,n])=>
+  `<div class="tab ${TAB===k?'active':''}" onclick="TAB='${k}';render()">${n}</div>`).join(''); }
+
+function acctOpts(cur,withAll){ return `<option value="all" ${cur==='all'?'selected':''}>全部账户</option>`+
+  S.accounts.map(a=>`<option value="${a.id}" ${cur===a.id?'selected':''}>${a.name}</option>`).join(''); }
+
+/* ---- 持仓看板 ---- */
+function boardRowsAccount(){
+  const list=S.assets.filter(a=>FILTER.acct==='all'||a.accountId===FILTER.acct);
+  if(!list.length) return '<tr><td colspan="10" class="empty">暂无持仓</td></tr>';
+  return list.map(a=>{
+    const r=calcAsset(a,S), stk=a.type==='stock', CS=a.currency==='USD'?'$':'¥';
+    const qtyCol=stk? r.qty+' 股' : money(a.marketValue||0,a.currency);
+    const costCol=stk? `<b>${CS}${r.avgLocal.toFixed(3)}</b><div class="muted" style="font-size:11px">购入均价 ${CS}${r.buyAvgLocal.toFixed(3)}</div>` : money(r.investCNY);
+    const pxCol=stk? CS+(a.price||0) : '<span class="muted">市值模式</span>';
+    const acts=stk
+      ?`<button class="b" onclick="openTrade('${a.id}','buy')">买入</button><button class="s" onclick="openTrade('${a.id}','sell')">卖出</button><button class="d" onclick="openTrade('${a.id}','div')">分红</button><button class="d" onclick="openTrade('${a.id}','bonus')">送股</button><button class="d" onclick="openTrade('${a.id}','split')">拆分</button>`
+      :`<button class="b" onclick="openTrade('${a.id}','invest')">投入</button><button class="s" onclick="openTrade('${a.id}','redeem')">赎回</button><button class="d" onclick="openTrade('${a.id}','income')">分红/利息</button>`;
+    return `<tr>
+      <td><b>${a.name}</b>${a.code?` <span class="muted">${a.code}</span>`:''}
+        <span class="badge ${a.type}">${TYPES[a.type]}</span>
+        ${a.market?`<span class="badge ${a.market}">${MARKETS[a.market]}</span>`:''}
+        <span class="badge ${a.currency}">${a.currency}</span></td>
+      <td><span class="badge acc">${accName(a.accountId)}</span></td>
+      <td class="num">${qtyCol}</td>
+      <td class="num">${costCol}</td>
+      <td class="num">${pxCol}</td>
+      <td class="num">${money(r.mvCNY)}</td>
+      <td class="num ${fxColor(r.unrealCNY)}">${money(r.unrealCNY)}</td>
+      <td class="num ${fxColor(assetTotal(r))}">${money(assetTotal(r))}</td>
+      <td class="num ${fxColor(assetTotal(r))}">${((r.rate||0)*100).toFixed(2)}%</td>
+      <td><div class="act">${acts}</div></td>
+    </tr>`;
+  }).join('');
+}
+function boardRowsMerged(){
+  const agg=securityAggregation(S).filter(m=>FILTER.acct==='all'||m.accounts.some(x=>x.accountId===FILTER.acct));
+  if(!agg.length) return '<tr><td colspan="8" class="empty">暂无持仓</td></tr>';
+  return agg.map(m=>{
+    const CS=m.currency==='USD'?'$':'¥';
+    const accs=m.accounts.map(x=>accName(x.accountId)).join('、');
+    return `<tr>
+      <td><b>${m.name}</b>${m.code?` <span class="muted">${m.code}</span>`:''}
+        <span class="badge ${m.type}">${TYPES[m.type]}</span>
+        ${m.market?`<span class="badge ${m.market}">${MARKETS[m.market]}</span>`:''}
+        <span class="badge ${m.currency}">${m.currency}</span></td>
+      <td><span class="badge acc">${m.accounts.length} 个账户</span> <span class="muted">${accs}</span></td>
+      <td class="num">${m.type==='stock'?m.qty+' 股':'-'}</td>
+      <td class="num">${m.type==='stock'?CS+m.avgCNY.toFixed(3)+' (¥)':money(m.costCNY)}</td>
+      <td class="num">${money(m.mvCNY)}</td>
+      <td class="num ${fxColor(m.unrealCNY)}">${money(m.unrealCNY)}</td>
+      <td class="num ${fxColor(m.totalCNY)}">${money(m.totalCNY)}</td>
+      <td class="num ${fxColor(m.totalCNY)}">${((m.rate||0)*100).toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+}
+function holdingBoard(){
+  if(!S.assets.length) return '';
+  const merged=VIEW.mode==='merged';
+  const head= merged
+    ? `<tr><th>标的(合并)</th><th>分布账户</th><th>合计持仓</th><th>成本(¥)</th><th>市值(¥)</th><th>浮动盈亏(¥)</th><th>总盈亏(¥)</th><th>收益率</th></tr>`
+    : `<tr><th>标的</th><th>所属账户</th><th>持仓/份额</th><th>成本(摊薄 / 购入均价)</th><th>现价</th><th>市值(¥)</th><th>浮动盈亏(¥)</th><th>总盈亏(¥)</th><th>收益率</th><th style="text-align:right">操作</th></tr>`;
+  return `<div class="board"><h3>持仓看板
+      <span class="row" style="gap:10px">
+        <select style="padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px" onchange="FILTER.acct=this.value;render()">${acctOpts(FILTER.acct)}</select>
+        <span class="segmented">
+          <button class="${!merged?'on':''}" onclick="VIEW.mode='account';render()">按账户明细</button>
+          <button class="${merged?'on':''}" onclick="VIEW.mode='merged';render()">按标的合并</button>
+        </span>
+      </span></h3>
+    <div style="overflow-x:auto"><table><thead>${head}</thead><tbody>${merged?boardRowsMerged():boardRowsAccount()}</tbody></table></div>
+    <div class="legend">成本用历史锁定汇率、市值用最新汇率;股票成本按当前口径(${cfgOf(S).costMethod==='fifo'?'FIFO 先进先出':'摊薄加权平均'}),分红${cfgOf(S).dividendReducesCost?'冲减成本':'计入已实现收益'}。可在「设置」页切换口径,看板即时重算。</div></div>`;
+}
+function viewDash(){
+  const s=summary(S,{accountId:FILTER.acct==='all'?null:FILTER.acct});
+  const byType={}; s.rows.forEach(r=>byType[r.a.type]=(byType[r.a.type]||0)+r.mv);
+  const cols={stock:'#1a56db',fund:'#c0651a',wealth:'#1c7a4b',bond:'#5b46c9'};
+  const tot=Object.values(byType).reduce((a,b)=>a+b,0)||1;
+  const dist=Object.entries(byType).map(([k,v])=>`<i style="width:${v/tot*100}%;background:${cols[k]}"></i>`).join('');
+  const leg=Object.entries(byType).map(([k,v])=>`<span style="margin-right:14px"><b style="color:${cols[k]}">●</b> ${TYPES[k]} ${(v/tot*100).toFixed(1)}% ${money(v)}</span>`).join('');
+  const byCcy={CNY:0,USD:0}; s.rows.forEach(r=>{ if(r.a.currency==='USD')byCcy.USD+=r.mv; else byCcy.CNY+=r.mv; });
+  const rank=[...s.rows].sort((a,b)=>b.profit-a.profit);
+  return `${S.assets.length?holdingBoard():emptyState()}
+  <div class="grid2">
+    <div class="panel"><h3>资产分布(按类型)</h3><div class="dist">${dist}</div><div class="legend">${leg}</div>
+      <h3 style="margin-top:18px">币种结构</h3>
+      <div class="legend">人民币计价市值 ${money(byCcy.CNY)}(${(byCcy.CNY/((byCcy.CNY+byCcy.USD)||1)*100).toFixed(1)}%)<br>
+      美元资产折人民币 ${money(byCcy.USD)}(${(byCcy.USD/((byCcy.CNY+byCcy.USD)||1)*100).toFixed(1)}%)</div></div>
+    <div class="panel"><h3>分账户统计</h3><div style="overflow-x:auto"><table>
+      <thead><tr><th>账户</th><th>标的数</th><th>市值(¥)</th><th>投入(¥)</th><th>盈亏(¥)</th><th>收益率</th></tr></thead><tbody>
+      ${accountSummary(S).byAccount.map(x=>`<tr><td>${x.account.name} <span class="badge ${x.account.currency}">${x.account.currency}</span></td>
+        <td class="num">${x.count}</td><td class="num">${money(x.mv)}</td><td class="num">${money(x.invest)}</td>
+        <td class="num ${fxColor(x.profit)}">${money(x.profit)}</td><td class="num ${fxColor(x.profit)}">${(x.rate*100).toFixed(2)}%</td></tr>`).join('')}
+      <tr style="font-weight:700;background:#fafbfe"><td>合计</td><td class="num">${S.assets.length}</td>
+        <td class="num">${money(accountSummary(S).total.mv)}</td><td class="num">${money(accountSummary(S).total.invest)}</td>
+        <td class="num ${fxColor(accountSummary(S).total.profit)}">${money(accountSummary(S).total.profit)}</td>
+        <td class="num ${fxColor(accountSummary(S).total.profit)}">${(accountSummary(S).total.rate*100).toFixed(2)}%</td></tr>
+      </tbody></table></div></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><h3>持仓收益排行</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>资产</th><th>账户</th><th>市值(¥)</th><th>总盈亏(¥)</th><th>收益率</th></tr></thead><tbody>
+    ${rank.map(r=>`<tr><td>${r.a.name} <span class="badge ${r.a.type}">${TYPES[r.a.type]}</span></td>
+      <td><span class="badge acc">${accName(r.a.accountId)}</span></td><td class="num">${money(r.mv)}</td>
+      <td class="num ${fxColor(r.profit)}">${money(r.profit)}</td><td class="num ${fxColor(r.profit)}">${((r.r.rate||0)*100).toFixed(2)}%</td></tr>`).join('')}
+    </tbody></table></div></div>`;
+}
+
+/* ---- 持仓卡片 ---- */
+function viewHold(){
+  if(!S.assets.length) return emptyState();
+  const list=S.assets.filter(a=>(FILTER.type==='all'||a.type===FILTER.type)&&(FILTER.ccy==='all'||a.currency===FILTER.ccy)
+    &&(FILTER.acct==='all'||a.accountId===FILTER.acct)&&(!FILTER.kw||((a.name||'')+(a.code||'')).toLowerCase().includes(FILTER.kw.toLowerCase())));
+  return `
+  <div class="filters">
+    <select onchange="FILTER.type=this.value;render()">${['all',...Object.keys(TYPES)].map(k=>`<option value="${k}" ${FILTER.type===k?'selected':''}>${k==='all'?'全部类型':TYPES[k]}</option>`).join('')}</select>
+    <select onchange="FILTER.acct=this.value;render()">${acctOpts(FILTER.acct)}</select>
+    <select onchange="FILTER.ccy=this.value;render()">${[['all','全部币种'],['CNY','人民币'],['USD','美元']].map(([k,n])=>`<option value="${k}" ${FILTER.ccy===k?'selected':''}>${n}</option>`).join('')}</select>
+    <input placeholder="搜索名称/代码" value="${FILTER.kw}" oninput="FILTER.kw=this.value;render()">
+    <button class="btn primary sm" onclick="openAsset()">+ 新增投资</button>
+  </div>
+  ${list.map(a=>assetCard(a)).join('')||`<div class="empty">没有匹配的持仓</div>`}`;
+}
+function assetCard(a){
+  const r=calcAsset(a,S), stk=a.type==='stock', CS=a.currency==='USD'?'$':'¥';
+  const m=stk?[
+    ['持仓数量',r.qty],['摊薄成本('+CS+')',r.avgLocal.toFixed(3)],['购入均价('+CS+')',r.buyAvgLocal.toFixed(3)],
+    ['持仓成本总额(¥)',money(r.costCNY)],['现价/最新',CS+(a.price||0)],['市值(¥)',money(r.mvCNY)]
+  ]:[
+    ['累计投入(¥)',money(r.investCNY)],['已收回(¥)',money(r.redeemCNY)],['现金收入(¥)',money(r.incomeCNY)],
+    ['当前市值(¥)',money(r.mvCNY)],['总收益(¥)',money(r.total)]
+  ];
+  const total=assetTotal(r);
+  const acts=stk
+    ?`<button class="btn sm" onclick="openTrade('${a.id}','buy')">买入</button><button class="btn sm" onclick="openTrade('${a.id}','sell')">卖出</button><button class="btn sm" onclick="openTrade('${a.id}','div')">分红</button><button class="btn sm" onclick="openTrade('${a.id}','bonus')">送股</button><button class="btn sm" onclick="openTrade('${a.id}','split')">拆分</button>`
+    :`<button class="btn sm" onclick="openTrade('${a.id}','invest')">投入</button><button class="btn sm" onclick="openTrade('${a.id}','redeem')">赎回</button><button class="btn sm" onclick="openTrade('${a.id}','income')">分红/利息</button>`;
+  return `<div class="acard">
+    <div class="row spread head">
+      <div class="row"><b style="font-size:15px">${a.name}</b>${a.code?`<span class="muted">${a.code}</span>`:''}
+        <span class="badge ${a.type}">${TYPES[a.type]}</span>
+        ${a.market?`<span class="badge ${a.market}">${MARKETS[a.market]}</span>`:''}
+        <span class="badge ${a.currency}">${a.currency}</span>
+        <span class="badge acc">${accName(a.accountId)}</span></div>
+      <div class="row">${acts}
+        <button class="btn sm" onclick="editPrice('${a.id}')">${stk?'改现价':'改市值'}</button>
+        <button class="btn sm" onclick="openAsset('${a.id}')">编辑</button>
+        <button class="btn sm warn" onclick="delAsset('${a.id}')">删</button></div>
+    </div>
+    <div class="metrics">
+      ${m.map(x=>`<div class="metric"><div class="k">${x[0]}</div><div class="v">${x[1]}</div></div>`).join('')}
+      <div class="metric"><div class="k">${stk?'已实现(含分红)':'现金收入'}(¥)</div><div class="v ${fxColor(stk?r.realCNY+r.divCNY:r.incomeCNY)}">${money(stk?r.realCNY+r.divCNY:r.incomeCNY)}</div></div>
+      <div class="metric"><div class="k">浮动盈亏(¥)</div><div class="v ${fxColor(r.unrealCNY)}">${money(r.unrealCNY)}</div></div>
+      <div class="metric"><div class="k">总盈亏(¥)</div><div class="v ${fxColor(total)}">${money(total)}</div></div>
+      <div class="metric"><div class="k">收益率</div><div class="v ${fxColor(total)}">${((r.rate||0)*100).toFixed(2)}%</div></div>
+      <div class="metric"><div class="k">估值汇率</div><div class="v">${a.currency==='USD'?'1$='+r.fxUsed.toFixed(3):'-'}</div></div>
+    </div>
+    <div class="legend">${stk?`参考:累计买入均价 ¥${r.buyAvgCNY.toFixed(3)}(买入 ${r.buyQty} 股);口径=${cfgOf(S).costMethod==='fifo'?'FIFO':'摊薄'},分红${cfgOf(S).dividendReducesCost?'冲减成本':'计入收益'}。`:
+      `成本用历史锁定汇率,市值用最新汇率(1$=${currentFx(S).toFixed(3)})。`}</div>
+    <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">查看明细(${stk?eventsOf(S,a.id).length:eventsOf(S,a.id).length} 条)</summary>
+      ${stk?tradeMini(a):flowMini(a)}</details>
+  </div>`;
+}
+function tradeMini(a){ const evs=[...eventsOf(S,a.id)].sort((x,y)=>x.date<y.date?1:-1);
+  if(!evs.length)return `<div class="muted" style="padding:8px">暂无</div>`;
+  return `<div style="overflow-x:auto"><table><thead><tr><th>日期</th><th>类型</th><th>数量/比例</th><th>成交价/金额</th><th>手续费</th><th>汇率</th><th>备注</th><th></th></tr></thead><tbody>
+  ${evs.map(t=>{ const cls=t.side==='buy'?'up':(t.side==='sell'?'down':'');
+    const q=t.side==='split'?('1→'+t.ratio):(t.qty!=null?t.qty:'-');
+    const p=t.side==='div'?money(t.amount,a.currency):(t.price!=null?t.price:'-');
+    return `<tr><td>${t.date}</td><td class="${cls}">${STK_SIDE[t.side]}${t.isT?'<span class="tag">T</span>':''}</td>
+      <td class="num">${q}</td><td class="num">${p}</td><td class="num">${t.fee!=null?t.fee:'-'}</td><td class="num">${t.fx||1}</td><td>${t.note||''}</td>
+      <td><button class="btn sm warn" onclick="delEvent('${t.id}')">×</button></td></tr>`; }).join('')}</tbody></table></div>`;
+}
+function flowMini(a){ const evs=[...eventsOf(S,a.id)].sort((x,y)=>x.date<y.date?1:-1);
+  if(!evs.length)return `<div class="muted" style="padding:8px">暂无</div>`;
+  return `<div style="overflow-x:auto"><table><thead><tr><th>日期</th><th>类型</th><th>金额</th><th>汇率</th><th>备注</th><th></th></tr></thead><tbody>
+  ${evs.map(f=>`<tr><td>${f.date}</td><td>${FLOW_KIND[f.kind]}</td><td class="num">${f.amount}</td><td class="num">${f.fx||1}</td><td>${f.note||''}</td>
+    <td><button class="btn sm warn" onclick="delEvent('${f.id}')">×</button></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ---- 账户 ---- */
+function viewAcc(){
+  const as=accountSummary(S);
+  return `<div class="panel" style="margin-bottom:14px"><h3>账户总览 <button class="btn primary sm" style="float:right" onclick="openAccount()">+ 新增账户</button></h3>
+    <div style="overflow-x:auto"><table>
+    <thead><tr><th>账户名称</th><th>类型</th><th>币种</th><th>标的数</th><th>市值(¥)</th><th>投入(¥)</th><th>盈亏(¥)</th><th>收益率</th><th>备注</th><th style="text-align:right">操作</th></tr></thead><tbody>
+    ${as.byAccount.map(x=>`<tr>
+      <td><b>${x.account.name}</b></td><td><span class="badge">${ACCKIND[x.account.kind]||'其他'}</span></td>
+      <td><span class="badge ${x.account.currency}">${x.account.currency}</span></td>
+      <td class="num">${x.count}</td><td class="num">${money(x.mv)}</td><td class="num">${money(x.invest)}</td>
+      <td class="num ${fxColor(x.profit)}">${money(x.profit)}</td><td class="num ${fxColor(x.profit)}">${(x.rate*100).toFixed(2)}%</td>
+      <td class="muted">${x.account.note||''}</td>
+      <td><div class="act"><button onclick="openAccount('${x.account.id}')">编辑</button><button onclick="delAccount('${x.account.id}')">删除</button></div></td></tr>`).join('')}
+    <tr style="font-weight:700;background:#fafbfe"><td>合计</td><td></td><td></td><td class="num">${S.assets.length}</td>
+      <td class="num">${money(as.total.mv)}</td><td class="num">${money(as.total.invest)}</td>
+      <td class="num ${fxColor(as.total.profit)}">${money(as.total.profit)}</td><td class="num ${fxColor(as.total.profit)}">${(as.total.rate*100).toFixed(2)}%</td><td></td><td></td></tr>
+    </tbody></table></div>
+    <div class="legend">删除账户会同时删除其下全部资产与记录。资产需归属某个账户,便于分离统计不同券商/银行。</div></div>
+  ${S.accounts.map(acc=>{
+    const list=S.assets.filter(a=>a.accountId===acc.id);
+    return `<div class="acard"><div class="row spread head">
+      <div class="row"><b style="font-size:15px">${acc.name}</b><span class="badge">${ACCKIND[acc.kind]||'其他'}</span><span class="badge ${acc.currency}">${acc.currency}</span>
+        <span class="muted">${list.length} 个标的</span></div>
+      <button class="btn sm" onclick="openAsset(null,'${acc.id}')">+ 在此账户新增投资</button></div>
+      <div class="legend" style="margin-top:10px">${list.map(a=>{const r=calcAsset(a,S);
+        return `<span style="display:inline-block;margin:3px 14px 3px 0">${a.name} <span class="muted">${a.type==='stock'?r.qty+'股':money(a.marketValue||0,a.currency)}</span> → <b class="${fxColor(assetTotal(r))}">${money(assetTotal(r))}</b></span>`;}).join('')||'<span class="muted">暂无资产</span>'}</div>
+    </div>`;
+  }).join('')}`;
+}
+
+/* ---- 交易流水 ---- */
+function viewTx(){
+  const rows=[];
+  for(const a of S.assets){ if(FILTER.acct!=='all'&&a.accountId!==FILTER.acct)continue;
+    eventsOf(S,a.id).forEach(t=>{
+      if(a.type==='stock'){ const sign=t.side==='buy'?-1:(t.side==='sell'?1:0);
+        const amt=t.side==='div'?(t.amount||0):(t.qty!=null&&t.price!=null?t.qty*t.price:0);
+        rows.push({date:t.date,asset:a,kind:STK_SIDE[t.side],amt:sign*(amt-(t.fee||0)),ccy:a.currency,fx:t.fx||1,note:t.note||''});
+      } else rows.push({date:t.date,asset:a,kind:FLOW_KIND[t.kind],amt:(t.kind==='invest'?-1:1)*t.amount,ccy:a.currency,fx:t.fx||1,note:t.note||''});
+    });
+  }
+  rows.sort((x,y)=>x.date<y.date?1:-1);
+  if(!rows.length)return emptyState();
+  return `<div class="panel"><h3>全部交易流水(按时间倒序)
+    <select style="float:right;padding:6px 9px;border:1px solid var(--line);border-radius:8px;font-size:12.5px" onchange="FILTER.acct=this.value;render()">${acctOpts(FILTER.acct)}</select></h3>
+    <div style="overflow-x:auto"><table><thead><tr><th>日期</th><th>资产</th><th>账户</th><th>类型</th><th>金额(原币)</th><th>币种</th><th>汇率</th><th>折人民币</th><th>备注</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${r.date}</td><td>${r.asset.name}</td><td><span class="badge acc">${accName(r.asset.accountId)}</span></td><td>${r.kind}</td>
+    <td class="num ${r.amt<0?'':'down'}">${r.amt<0?'':'+'}${Math.abs(r.amt).toFixed(2)}</td>
+    <td>${r.ccy}</td><td class="num">${r.fx}</td><td class="num">${money(r.amt*r.fx)}</td><td>${r.note}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+
+/* ---- 绩效 ---- */
+function lineChart(series,keys,colors,labels){
+  const all=series.flatMap(d=>keys.map(k=>d[k]).filter(v=>v!=null));
+  const max=Math.max(...all,0.01), min=Math.min(...all,0); const H=150, W=Math.max(300,series.length*54);
+  const y=v=>H-Math.round((v-min)/((max-min)||1)*H);
+  const path=k=>series.map((d,i)=>d[k]==null?'':`${i===0?'M':'L'}${30+i*((W-40)/(Math.max(1,series.length-1)))},${y(d[k])}`).join(' ');
+  return `<svg viewBox="0 0 ${W} ${H+34}" style="width:100%;max-width:${W}px;height:auto">
+    <line x1="28" y1="${y(min)}" x2="${W-8}" y2="${y(min)}" stroke="#e4e8f0"/>
+    ${keys.map((k,i)=>`<path d="${path(k)}" fill="none" stroke="${colors[i]}" stroke-width="2"/>`).join('')}
+    ${series.map((d,i)=>`<text x="${30+i*((W-40)/(Math.max(1,series.length-1)))}" y="${H+16}" font-size="9" fill="#6b7688" text-anchor="middle">${(d.month||'').slice(5)}</text>`).join('')}
+    ${labels.map((l,i)=>`<text x="${8+i*90}" y="${12+i*0}" font-size="0" fill="none"></text>`).join('')}
+  </svg>`;
+}
+function viewPerf(){
+  const opts={accountId:FILTER.acct==='all'?null:FILTER.acct};
+  const s=summary(S,opts), xi=portfolioXirr(S,opts), dd=holdingDays(S,opts), tw=twr(S,opts);
+  const ann=annualized(s.rate,dd); const bm=benchmark(S,S.benchSeries||[],opts);
+  const legend=(o,c,t)=>`<span style="margin-right:16px"><b style="color:${c}">●</b> ${t}</span>`;
+  return `<div class="filters"><span class="muted">按账户：</span><select onchange="FILTER.acct=this.value;render()">${acctOpts(FILTER.acct)}</select></div>
+  <div class="panel"><h3>核心绩效指标</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>指标</th><th>数值</th><th>说明</th></tr></thead><tbody>
+    <tr><td><b>XIRR（资金加权年化）</b></td><td class="num up" style="font-size:15px">${xi!=null?(xi*100).toFixed(2)+'%':'—'}</td><td class="muted">考虑了每笔资金投入的时间，是<b>最真实的年化收益</b>。分批投入时与简单收益率差异很大。</td></tr>
+    <tr><td>TWR（时间加权）</td><td class="num">${tw!=null?(tw*100).toFixed(2)+'%':'—'}</td><td class="muted">剔除资金进出的影响，衡量"选股能力"，需月末快照。</td></tr>
+    <tr><td>简单年化</td><td class="num">${ann!=null?(ann*100).toFixed(2)+'%':'—'}</td><td class="muted">（1+累计收益率）^(365/持有天数)−1，仅供参考。</td></tr>
+    <tr><td>累计收益率</td><td class="num ${fxColor(s.rate)}">${(s.rate*100).toFixed(2)}%</td><td class="muted">累计收益 ${money(s.profit)} / 累计投入 ${money(s.invest)}</td></tr>
+    <tr><td>持有天数</td><td class="num">${dd} 天</td><td class="muted">首笔记录至今</td></tr>
+    <tr><td>已实现 / 浮动</td><td class="num">${money(s.real)} / ${money(s.unreal)}</td><td class="muted">按当前成本口径</td></tr>
+    </tbody></table></div>
+    <div class="hint">⚑ <b>为什么要 XIRR？</b> 假设您分 3 年每年投 10 万，总赚 3 万。简单收益率 = 10%，但早期投入的钱占用时间更长，XIRR 会给出更公平的年化值（本例约 6%）——同一个结果，两个数字，投资决策看 XIRR。</div></div>
+  <div class="panel" style="margin-top:14px"><h3>组合净值 vs 基准
+    <button class="btn sm" style="float:right" onclick="openBench()">更新基准点位</button></h3>
+    ${bm?`<div class="legend" style="margin-bottom:6px">${legend(0,'#1f3a5f','我的组合')}${legend(0,'#c0651a','沪深300')}</div>
+      ${lineChart(bm.series,['port','bench'],['#1f3a5f','#c0651a'],['组合','基准'])}
+      <div style="display:flex;gap:26px;flex-wrap:wrap;margin-top:12px">
+        <div><div class="muted">组合累计</div><div style="font-size:20px;font-weight:700" class="${fxColor(bm.portRet)}">${bm.portRet!=null?(bm.portRet*100).toFixed(2)+'%':'—'}</div></div>
+        <div><div class="muted">基准累计</div><div style="font-size:20px;font-weight:700">${bm.benchRet!=null?(bm.benchRet*100).toFixed(2)+'%':'—'}</div></div>
+        <div><div class="muted">超额收益 α</div><div style="font-size:20px;font-weight:700" class="${fxColor(bm.alpha)}">${bm.alpha!=null?(bm.alpha>0?'+':'')+(bm.alpha*100).toFixed(2)+'%':'—'}</div></div></div>
+      <div style="overflow-x:auto;margin-top:12px"><table><thead><tr><th>月份</th><th>我的组合</th><th>沪深300</th><th>当月超额</th></tr></thead><tbody>
+      ${bm.series.map(r=>`<tr><td>${r.month}</td><td class="num ${fxColor(r.port)}">${(r.port*100).toFixed(2)}%</td>
+        <td class="num">${r.bench==null?'—':(r.bench*100).toFixed(2)+'%'}</td>
+        <td class="num ${fxColor(r.bench==null?0:r.port-r.bench)}">${r.bench==null?'—':((r.port-r.bench)>0?'+':'')+((r.port-r.bench)*100).toFixed(2)+'%'}</td></tr>`).join('')}
+      </tbody></table></div>`:`<div class="empty">需至少 2 个月末快照 + 基准点位，才能计算基准对比。<br>请到「数据」页录入月末快照。</div>`}</div>`;
+}
+
+/* ---- 配置再平衡 ---- */
+function viewAlloc(){
+  const tg=(cfgOf(S).allocTargets)||ALLOC_DEFAULT;
+  const al=allocation(S,tg,FILTER.acct==='all'?null:{accountId:FILTER.acct});
+  const cols={stock:'#1a56db',fund:'#c0651a',wealth:'#1c7a4b',bond:'#5b46c9'};
+  const actions=al.rows.filter(r=>Math.abs(r.diff)>1).map(r=>r.diff<0
+    ? {t:'卖出',a:TYPES[r.type],v:-r.diff,c:'down',txt:`减持 ${TYPES[r.type]} 约 ${money(-r.diff)}（当前 ${(r.curPct*100).toFixed(1)}% → 目标 ${(r.tgtPct*100).toFixed(0)}%）`}
+    : {t:'买入',a:TYPES[r.type],v:r.diff,c:'up',txt:`增持 ${TYPES[r.type]} 约 ${money(r.diff)}（当前 ${(r.curPct*100).toFixed(1)}% → 目标 ${(r.tgtPct*100).toFixed(0)}%）`});
+  return `<div class="panel"><h3>目标配置与偏离</h3><div class="muted" style="margin-bottom:12px">总资产 ${money(al.total)}｜偏离度 ${(al.driftPct*100).toFixed(2)}%（${money(al.drift)}）${al.driftPct>0.05?' <span class="tag">建议再平衡</span>':' ✓ 接近目标'}</div>
+    <div style="overflow-x:auto"><table>
+    <thead><tr><th>资产类型</th><th>当前市值(¥)</th><th>当前占比</th><th>目标占比</th><th>目标金额(¥)</th><th>需调整(¥)</th></tr></thead><tbody>
+    ${al.rows.map(r=>`<tr><td><span class="badge ${r.type}">${TYPES[r.type]}</span></td>
+      <td class="num">${money(r.cur)}</td><td class="num">${(r.curPct*100).toFixed(1)}%</td>
+      <td class="num"><input type="number" value="${(r.tgtPct*100).toFixed(0)}" min="0" max="100" style="width:64px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;text-align:right" onchange="setTgt('${r.type}',this.value)"> %</td>
+      <td class="num">${money(r.tgtAmt)}</td>
+      <td class="num ${r.diff<0?'down':'up'}">${r.diff>0?'+':''}${money(r.diff)}</td></tr>`).join('')}
+    <tr style="font-weight:700;background:#fafbfe"><td>合计</td><td class="num">${money(al.total)}</td><td class="num">100%</td>
+      <td class="num">${(Object.values(tg).reduce((a,b)=>a+b,0)*100).toFixed(0)}%</td><td class="num">—</td><td class="num">—</td></tr>
+    </tbody></table></div>
+    <div class="hint">目标占比可修改，实时重算偏离度与调仓建议。上表 4 类目标之和建议 = 100%。</div></div>
+  <div class="panel" style="margin-top:14px"><h3>一键调仓清单</h3>
+    ${actions.length?`<div style="overflow-x:auto"><table><thead><tr><th>动作</th><th>类别</th><th>金额(¥)</th><th>说明</th></tr></thead><tbody>
+      ${actions.map(a=>`<tr><td class="${a.c}"><b>${a.t}</b></td><td>${a.a}</td><td class="num">${money(a.v)}</td><td class="muted">${a.txt}</td></tr>`).join('')}</tbody></table></div>`
+      :`<div class="empty">资产配置已在目标附近，无需调整 ✓</div>`}
+    <div class="hint">调仓需自行下单，本工具只给建议清单（不自动交易）。</div></div>`;
+}
+function setTgt(type,v){ const n=Math.max(0,Math.min(100,+v||0))/100; S.settings.allocTargets={...(cfgOf(S).allocTargets||ALLOC_DEFAULT),[type]:n}; save(); render(); toast('目标占比已更新'); }
+
+/* ---- 风险 ---- */
+function viewRisk(){
+  const c=concentration(S,FILTER.acct==='all'?{}:{accountId:FILTER.acct});
+  const al=checkAlerts(S);
+  const bar=(pct,col)=>`<div style="height:8px;border-radius:5px;background:#eef2f8;overflow:hidden;min-width:60px"><i style="display:block;height:100%;width:${Math.min(100,pct*100)}%;background:${col}"></i></div>`;
+  return `<div class="row" style="gap:14px;flex-wrap:wrap">
+    <div class="panel" style="flex:1;min-width:290px"><h3>集中度指标</h3>
+      <div class="row" style="gap:26px;flex-wrap:wrap">
+        <div><div class="muted">最大单一持仓</div><div style="font-size:22px;font-weight:700" class="${c.top1>c.warnSingle?'up':''}">${(c.top1*100).toFixed(1)}%</div></div>
+        <div><div class="muted">前 5 大合计</div><div style="font-size:22px;font-weight:700" class="${c.top5>c.warnTop5?'up':''}">${(c.top5*100).toFixed(1)}%</div></div>
+        <div><div class="muted">标的数</div><div style="font-size:22px;font-weight:700">${c.list.length}</div></div></div>
+      <div class="legend" style="margin-top:14px">阈值：单一 ${c.warnSingle*100}% ｜ 前5大 ${c.warnTop5*100}%</div></div>
+    <div class="panel" style="flex:1.3;min-width:330px"><h3>风险告警</h3>
+      ${c.alerts.length||al.length?(c.alerts.concat(al.map(x=>`[${x.level}] ${x.asset}：${x.msg}`))).map(a=>`<div style="padding:9px 12px;border-radius:9px;background:#fdece9;color:#c0392b;font-size:12.5px;margin-bottom:7px">⚠ ${a}</div>`).join('')
+        :'<div class="empty">暂无告警 ✓</div>'}</div></div>
+  <div class="panel" style="margin-top:14px"><h3>单标的占比（含告警线）</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>标的</th><th>类型</th><th>市值(¥)</th><th>占比</th><th></th><th>预警设置</th></tr></thead><tbody>
+    ${c.list.map(r=>{ const a=S.assets.find(x=>x.name===r.name); return `<tr><td>${r.name}</td><td><span class="badge ${r.type}">${TYPES[r.type]}</span></td>
+      <td class="num">${money(r.mv)}</td><td class="num ${r.pct>c.warnSingle?'up':''}">${(r.pct*100).toFixed(1)}%</td>
+      <td>${bar(r.pct,r.pct>c.warnSingle?'#e2453c':'#17a2b8')}</td>
+      <td>${a&&a.type==='stock'?`<button class="btn sm" onclick="openAlert('${a.id}')">${a.alerts?'编辑':'设置'}</button>`:'<span class="muted">—</span>'}</td></tr>`; }).join('')}
+    </tbody></table></div><div class="hint">预警设置：可为个股设止盈/止损价（或收益率），触发时在风险页告警。正式版可配合定时任务推送提醒。</div></div>`;
+}
+function openAlert(id){ const a=S.assets.find(x=>x.id===id), al=a.alerts||{};
+  show(`<h3>「${a.name}」止盈止损预警</h3>
+    <div class="f2"><div class="field"><label>止盈价（${a.currency}）</label><input id="al_tp" type="number" step="0.0001" value="${al.takeProfitPrice||''}" placeholder="如 1200"></div>
+      <div class="field"><label>止损价（${a.currency}）</label><input id="al_sl" type="number" step="0.0001" value="${al.stopLossPrice||''}" placeholder="如 800"></div></div>
+    <div class="f2"><div class="field"><label>止盈收益率（%）</label><input id="al_tr" type="number" value="${al.takeProfitRate?al.takeProfitRate*100:''}" placeholder="如 30"></div>
+      <div class="field"><label>止损收益率（%）</label><input id="al_sr" type="number" value="${al.stopLossRate?al.stopLossRate*100:''}" placeholder="如 10"></div></div>
+    <div class="hint">留空表示不启用该项。现价 ${a.price||0}。当前最新价在持仓页「改现价」更新。</div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveAlert('${id}')">保存</button></div>`); }
+function saveAlert(id){ const a=S.assets.find(x=>x.id===id); const g=x=>{const v=parseFloat(gv(x));return isNaN(v)?null:v;};
+  const tp=g('al_tp'),sl=g('al_sl'),tr=g('al_tr'),sr=g('al_sr');
+  if(tp==null&&sl==null&&tr==null&&sr==null)delete a.alerts;
+  else a.alerts={takeProfitPrice:tp,stopLossPrice:sl,takeProfitRate:tr!=null?tr/100:null,stopLossRate:sr!=null?Math.abs(sr)/100:null};
+  save();closeModal();render();toast('预警已保存'); }
+
+/* ---- 税务 ---- */
+function viewTax(){
+  const R={...TAX_DEFAULT,...(S.taxRules||{})}; const t=taxEstimate(S,R,FILTER.acct==='all'?null:{accountId:FILTER.acct});
+  const pts=(o,c)=>`<div class="row" style="gap:20px;flex-wrap:wrap"><div><div class="muted">分红红利税</div><div style="font-size:20px;font-weight:700">${money(t.divTax)}</div></div>
+    <div><div class="muted">资本利得税</div><div style="font-size:20px;font-weight:700">${money(t.capGainTax)}</div></div>
+    <div><div class="muted">预估总税负</div><div style="font-size:20px;font-weight:700" class="up">${money(t.totalTax)}</div></div></div>`;
+  return `<div class="panel"><h3>税务规则（可改）</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>项目</th><th>持股 ≤1月</th><th>1月~1年</th><th>>1年</th></tr></thead><tbody>
+    <tr><td>A股 现金分红红利税</td>
+      <td><input type="number" value="${(R.cnDiv.le1m*100).toFixed(0)}" style="width:60px" onchange="setTax('cnDiv.le1m',this.value)">%</td>
+      <td><input type="number" value="${(R.cnDiv.m1to1y*100).toFixed(0)}" style="width:60px" onchange="setTax('cnDiv.m1to1y',this.value)">%</td>
+      <td><input type="number" value="${(R.cnDiv.gt1y*100).toFixed(0)}" style="width:60px" onchange="setTax('cnDiv.gt1y',this.value)">%</td></tr>
+    <tr><td>美股 股息预扣税</td><td colspan="3"><input type="number" value="${(R.usDiv*100).toFixed(0)}" style="width:60px" onchange="setTax('usDiv',this.value)">% <span class="muted">（默认 30%，中美税收协定可降为 10%）</span></td></tr>
+    <tr><td>资本利得税 A股 / 美股</td><td colspan="3"><input type="number" value="${(R.cnCapGain*100).toFixed(0)}" style="width:60px" onchange="setTax('cnCapGain',this.value)">% / <input type="number" value="${(R.usCapGain*100).toFixed(0)}" style="width:60px" onchange="setTax('usCapGain',this.value)">% <span class="muted">（A股个人暂免；美股非居民通常 0%）</span></td></tr>
+    </tbody></table></div>
+    <div class="hint warn">⚠ 以上为<b>估算</b>，非税务申报依据。实际以券商/税务机关口径为准。</div></div>
+  <div class="panel" style="margin-top:14px"><h3>预估税负汇总</h3>${pts()}</div>
+  <div class="panel" style="margin-top:14px"><h3>分红税明细</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>标的</th><th>市场</th><th>除息日</th><th>分红（¥）</th><th>税率</th><th>应缴税</th><th>税后到手</th></tr></thead><tbody>
+    ${t.dividends.length?t.dividends.map(d=>`<tr><td>${d.asset}</td><td><span class="badge ${d.market}">${MARKETS[d.market]||d.market}</span></td><td>${d.date}</td>
+      <td class="num">${money(d.amount)}</td><td class="num">${(d.rate*100).toFixed(0)}%</td><td class="num up">${money(d.tax)}</td><td class="num">${money(d.net)}</td></tr>`).join(''):'<tr><td colspan="7" class="empty">暂无分红记录</td></tr>'}
+    </tbody></table></div></div>
+  <div class="panel" style="margin-top:14px"><h3>已实现资本利得（按市场 / 年）</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>市场</th><th>年度</th><th>已实现利得(¥)</th><th>预估税(¥)</th></tr></thead><tbody>
+    ${['CN','US'].flatMap(mk=>Object.keys(t.capGain[mk].gain? realizedGainsByYear(S,FILTER.acct==='all'?null:{accountId:FILTER.acct})[mk]:{}).length?Object.keys(realizedGainsByYear(S,FILTER.acct==='all'?null:{accountId:FILTER.acct})[mk]).map(y=>`<tr><td><span class="badge ${mk}">${MARKETS[mk]}</span></td><td>${y}</td>
+      <td class="num ${fxColor(realizedGainsByYear(S,FILTER.acct==='all'?null:{accountId:FILTER.acct})[mk][y])}">${money(realizedGainsByYear(S,FILTER.acct==='all'?null:{accountId:FILTER.acct})[mk][y])}</td>
+      <td class="num">${money(Math.max(0,realizedGainsByYear(S,FILTER.acct==='all'?null:{accountId:FILTER.acct})[mk][y])*(mk==='US'?R.usCapGain:R.cnCapGain))}</td></tr>`):[]).join('')||'<tr><td colspan="4" class="empty">暂无已实现卖出</td></tr>'}
+    </tbody></table></div></div>`;
+}
+function setTax(path,v){ const n=(+v||0)/100; const r={...TAX_DEFAULT,...(S.taxRules||{})};
+  if(path==='cnDiv.le1m')r.cnDiv={...r.cnDiv,le1m:n}; else if(path==='cnDiv.m1to1y')r.cnDiv={...r.cnDiv,m1to1y:n}; else if(path==='cnDiv.gt1y')r.cnDiv={...r.cnDiv,gt1y:n};
+  else r[path]=n; S.taxRules=r; save(); render(); toast('税务规则已更新'); }
+
+/* ---- 定投 ---- */
+function viewPlan(){
+  const plans=S.dcaPlans||[];
+  return `<div class="panel" style="margin-bottom:14px"><h3>定投计划 <button class="btn primary sm" style="float:right" onclick="openPlan()">＋ 新建定投计划</button></h3>
+    ${plans.length?`<div style="overflow-x:auto"><table><thead><tr><th>标的</th><th>起始</th><th>期数</th><th>扣款日</th><th>每期金额</th><th>状态</th><th>操作</th></tr></thead><tbody>
+    ${plans.map(p=>{ const a=S.assets.find(x=>x.id===p.assetId); return `<tr><td>${a?a.name:'—'} <span class="badge ${a?a.type:''}">${a?TYPES[a.type]:''}</span></td>
+      <td>${p.startMonth}</td><td class="num">${p.months} 期</td><td class="num">每月 ${p.day} 日</td><td class="num">${money(p.amount,a?a.currency:'CNY')}</td>
+      <td><span class="badge ${p.active?'wealth':'CNY'}">${p.active?'进行中':'已暂停'}</span></td>
+      <td><div class="act"><button onclick="genPlan('${p.id}')">生成记录</button><button onclick="togglePlan('${p.id}')">${p.active?'暂停':'启用'}</button><button onclick="delPlan('${p.id}')">删</button></div></td></tr>`; }).join('')}
+    </tbody></table></div>`:'<div class="empty">还没有定投计划</div>'}
+    <div class="hint">点「生成记录」会把每期投入按日生成到该资产的交易流水（可再单条删除/修改）。基金定投建议用此功能一次性生成。汇率按生成当日最新值锁定。</div></div>
+  <div class="panel"><h3>定投记录（已生成）</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>日期</th><th>资产</th><th>金额</th><th>备注</th></tr></thead><tbody>
+    ${(S.events||[]).filter(e=>e.kind==='invest'&&(e.note||'').includes('定投')).sort((a,b)=>a.date<b.date?1:-1).map(e=>`<tr><td>${e.date}</td><td>${(S.assets.find(x=>x.id===e.assetId)||{}).name||'—'}</td><td class="num">${e.amount}</td><td>${e.note}</td></tr>`).join('')||'<tr><td colspan="4" class="empty">暂无</td></tr>'}
+    </tbody></table></div></div>`;
+}
+function openPlan(){ const flows=S.assets.filter(a=>a.type!=='stock');
+  show(`<h3>新建定投计划</h3>
+    <div class="field"><label>定投资产 *</label><select id="pl_asset">${flows.map(a=>`<option value="${a.id}">${a.name}（${TYPES[a.type]}·${a.currency}）</option>`).join('')}</select></div>
+    <div class="f2"><div class="field"><label>起始月份 *</label><input id="pl_start" type="month" value="${MONTH()}"></div>
+      <div class="field"><label>期数 *</label><input id="pl_months" type="number" value="12"></div></div>
+    <div class="f2"><div class="field"><label>每月扣款日</label><input id="pl_day" type="number" value="15" min="1" max="28"></div>
+      <div class="field"><label>每期金额 *</label><input id="pl_amount" type="number" value="1000"></div></div>
+    <div class="field"><label>备注</label><input id="pl_note" placeholder="如：标普500月定投"></div>
+    <div class="hint">仅支持基金/理财/债券类定投（股票请逐笔录入或自行处理）。</div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="savePlan()">保存</button></div>`); }
+function savePlan(){ const assetId=gv('pl_asset'); if(!assetId)return toast('请选择资产');
+  const plan={id:uid('d'),assetId,startMonth:gv('pl_start'),months:parseInt(gv('pl_months'))||12,day:parseInt(gv('pl_day'))||15,amount:parseFloat(gv('pl_amount'))||0,note:gv('pl_note')||'定投',active:true};
+  if(!(plan.amount>0))return toast('每期金额需大于0');
+  S.dcaPlans=[...(S.dcaPlans||[]),plan]; save();closeModal();render();toast('定投计划已创建'); }
+function genPlan(id){ const p=(S.dcaPlans||[]).find(x=>x.id===id); if(!p)return;
+  const rows=dcaGenerate({...p,fx:assetFx(S.assets.find(a=>a.id===p.assetId),S)});
+  if(!confirm(`将为该计划生成 ${rows.length} 笔投入记录，确定？`))return;
+  rows.forEach(r=>S.events.push({id:uid('e'),assetId:p.assetId,...r,note:(p.note||'定投')}));
+  save();render();toast(`已生成 ${rows.length} 笔定投记录`); }
+function togglePlan(id){ const p=(S.dcaPlans||[]).find(x=>x.id===id); p.active=!p.active; save();render(); }
+function delPlan(id){ if(!confirm('删除该定投计划？（已生成的记录不删）'))return; S.dcaPlans=S.dcaPlans.filter(x=>x.id!==id); save();render(); }
+
+/* ---- 出入金 ---- */
+function viewCash(){
+  const cf=cashFlowSummary(S,FILTER.acct==='all'?null:{accountId:FILTER.acct});
+  const rows=[...(S.cashFlows||[])].sort((a,b)=>a.date<b.date?1:-1).filter(c=>FILTER.acct==='all'||c.accountId===FILTER.acct);
+  return `<div class="filters"><span class="muted">按账户：</span><select onchange="FILTER.acct=this.value;render()">${acctOpts(FILTER.acct)}</select>
+    <button class="btn primary sm" onclick="openCash()">＋ 记一笔入金/出金</button></div>
+  <div class="panel"><h3>资金出入金</h3>
+    <div class="row" style="gap:26px;flex-wrap:wrap;margin-bottom:12px">
+      <div><div class="muted">累计入金</div><div style="font-size:20px;font-weight:700">${money(cf.deposit)}</div></div>
+      <div><div class="muted">累计出金</div><div style="font-size:20px;font-weight:700">${money(cf.withdraw)}</div></div>
+      <div><div class="muted">净入金</div><div style="font-size:20px;font-weight:700">${money(cf.net)}</div></div></div>
+    <div style="overflow-x:auto"><table><thead><tr><th>日期</th><th>账户</th><th>类型</th><th>金额(原币)</th><th>汇率</th><th>折人民币</th><th>备注</th><th></th></tr></thead><tbody>
+    ${rows.length?rows.map(c=>`<tr><td>${c.date}</td><td><span class="badge acc">${accName(c.accountId)}</span></td>
+      <td class="${c.kind==='deposit'?'up':'down'}">${c.kind==='deposit'?'入金':'出金'}</td>
+      <td class="num">${(+c.amount).toFixed(2)}</td><td class="num">${c.fx||1}</td><td class="num">${money((c.amount||0)*(c.fx||1))}</td><td>${c.note||''}</td>
+      <td><button class="btn sm warn" onclick="delCash('${c.id}')">×</button></td></tr>`).join(''):'<tr><td colspan="8" class="empty">暂无出入金记录</td></tr>'}
+    </tbody></table></div>
+    <div class="hint">⚑ <b>为什么单独记出入金？</b>银行→券商的转账是<b>本金搬运</b>，不是收益。记清楚出入金，才能把「净投入」与「投资收益」分开，报表里的收益才不会把追加本金误当盈利。每笔同样锁定当时汇率。</div></div>`;
+}
+function openCash(){ show(`<h3>记录入金 / 出金</h3>
+    <div class="f2"><div class="field"><label>日期 *</label><input id="cf_date" type="date" value="${TODAY()}"></div>
+      <div class="field"><label>类型 *</label><select id="cf_kind"><option value="deposit">入金（转入）</option><option value="withdraw">出金（转出）</option></select></div></div>
+    <div class="f2"><div class="field"><label>账户 *</label><select id="cf_acct">${S.accounts.map(a=>`<option value="${a.id}">${a.name}（${a.currency}）</option>`).join('')}</select></div>
+      <div class="field"><label>金额（原币）*</label><input id="cf_amt" type="number" step="0.01"></div></div>
+    <div class="field"><label>汇率（1 USD = ? CNY，锁到本笔）</label><input id="cf_fx" type="number" step="0.0001" value="${currentFx(S)}"></div>
+    <div class="field"><label>备注</label><input id="cf_note" placeholder="如：券商入金 / 取现"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveCash()">保存</button></div>`); }
+function saveCash(){ const acctId=gv('cf_acct'),amt=parseFloat(gv('cf_amt')); if(!(amt>0))return toast('金额需大于0');
+  const acc=S.accounts.find(a=>a.id===acctId); const ccy=acc?acc.currency:'CNY';
+  S.cashFlows=[...(S.cashFlows||[]),{id:uid('c'),accountId:acctId,date:gv('cf_date'),kind:gv('cf_kind'),amount:amt,fx:ccy==='USD'?(parseFloat(gv('cf_fx'))||currentFx(S)):1,note:gv('cf_note')}];
+  save();closeModal();render();toast('已记录'); }
+function delCash(id){ S.cashFlows=(S.cashFlows||[]).filter(c=>c.id!==id); save();render();toast('已删除'); }
+function openBench(){ const b=S.benchSeries||[]; const last=b[b.length-1]||{date:MONTH(),value:3800};
+  show(`<h3>更新基准点位（沪深300）</h3>
+    <div class="hint">按月末点位录入，仅需录入首末两个月份即可算累计对比；录入越多曲线越完整。</div>
+    <div class="field"><label>月份</label><input id="bm_m" type="month" value="${last.date}"></div>
+    <div class="field"><label>收盘点位</label><input id="bm_v" type="number" value="${last.value}"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveBench()">保存</button></div>`); }
+function saveBench(){ const m=gv('bm_m'),v=parseFloat(gv('bm_v')); if(!m||!(v>0))return toast('请填写月份与点位');
+  S.benchSeries=[...(S.benchSeries||[]).filter(b=>b.date!==m),{date:m,value:v}].sort((a,b)=>a.date<b.date?-1:1);
+  save();closeModal();render();toast('基准点位已更新'); }
+
+/* ---- 收益报表 ---- */
+function viewRep(){
+  const opts={accountId:FILTER.acct==='all'?null:FILTER.acct};
+  const mr=monthRows(S,opts), yr=yearRows(S,opts);
+  const bars=(data,valKey,color)=>`<div class="bars">${data.map(d=>{ const v=d[valKey]||0;
+    const max=Math.max(...data.map(x=>Math.abs(x[valKey]||0)),1), h=Math.max(3,Math.abs(v)/max*130);
+    return `<div class="barwrap"><div class="barval ${v<0?'down':''}">${v?money(v):''}</div>
+      <div class="bar ${v<0?'neg':''}" style="height:${h}px;background:${v<0?'var(--down)':color}"></div>
+      <div class="barlab">${d.month||d.year}</div></div>`;}).join('')}</div>`;
+  return `
+  <div class="filters"><span class="muted">按账户:</span>
+    <select onchange="FILTER.acct=this.value;render()">${acctOpts(FILTER.acct)}</select></div>
+  <div class="panel"><h3>月度收益</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>月份</th><th>净投入(¥)</th><th>已实现收益(¥)</th><th>含浮动总收益(¥)</th><th>月末总资产(¥)</th></tr></thead><tbody>
+    ${mr.map(r=>`<tr><td>${r.month}</td><td class="num">${money(r.net)}</td>
+      <td class="num ${fxColor(r.real)}">${money(r.real)}</td>
+      <td class="num ${r.floatTotal===null?'muted':fxColor(r.floatTotal)}">${r.floatTotal===null?'未记快照':money(r.floatTotal)}</td>
+      <td class="num">${r.snap===undefined?'-':money(r.snap)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="muted" style="margin:10px 0 4px">月度已实现收益(柱状)</div>${bars(mr,'real','#17a2b8')}
+    <div class="muted" style="margin:16px 0 4px">月度含浮动总收益(需录入月末快照)</div>${bars(mr.map(r=>({...r,floatTotal:r.floatTotal||0})),'floatTotal','#1f3a5f')}</div>
+  <div class="panel" style="margin-top:14px"><h3>年度收益</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>年度</th><th>净投入(¥)</th><th>已实现收益(¥)</th><th>含浮动总收益(¥)</th></tr></thead><tbody>
+    ${yr.map(r=>`<tr><td>${r.year}</td><td class="num">${money(r.net)}</td><td class="num ${fxColor(r.real)}">${money(r.real)}</td>
+      <td class="num ${fxColor(r.floatTotal)}">${r.hasF?money(r.floatTotal):'-'}</td></tr>`).join('')}</tbody></table></div>${bars(yr,'real','#17a2b8')}</div>`;
+}
+
+/* ---- 汇率 ---- */
+function viewFx(){
+  const cur=currentFx(S), fxs=[...S.fx].sort((a,b)=>a.date<b.date?1:-1);
+  const fs=cfgOf(S).fxSource||{};
+  const autoUsed=[...S.fx].filter(r=>r.date<=TODAY()).sort((a,b)=>a.date<b.date?-1:1).pop();
+  const usingManual=autoUsed&&autoUsed.source==='manual';
+  return `<div class="panel" style="margin-bottom:14px"><h3>当前生效汇率(用于估值)</h3>
+    <div class="row" style="gap:26px;flex-wrap:wrap">
+      <div><div class="muted">1 USD =</div><div style="font-size:26px;font-weight:700">¥${cur.toFixed(4)}</div>
+        <div class="badge ${usingManual?'acc':'CNY'}" style="margin-top:6px">${usingManual?'来源:管理员手动':'来源:汇率源自动'}</div></div>
+      <div class="muted" style="max-width:560px">汇率只对"记录之后"的新金额生效。历史记录已把当时汇率<b>固化在本条记录内</b>,调整汇率不会改写任何历史成本与已实现收益。</div>
+      <button class="btn primary" onclick="openFx()">+ 手动录入汇率</button></div></div>
+  <div class="panel" style="margin-bottom:14px"><h3>汇率源(管理员未录入时自动生效)</h3>
+    <div class="row spread" style="flex-wrap:wrap;gap:12px">
+      <div class="legend" style="margin:0">
+        主源:<b>${fs.providerName||'Frankfurter(欧洲央行数据)'}</b> · 备用:<b>${fs.fallback||'open.er-api.com'}</b><br>
+        最近拉取:<b>${fs.lastRate||'-'}</b>(${fs.lastDate||'-'},${fs.lastFetched||'-'})<br>
+        <b>优先级规则:</b>管理员当天手动录入 → 以手动为准;未录入 → 自动汇率源生效。</div>
+      <div class="row" style="gap:8px"><button class="btn" onclick="syncFx()">↻ 立即同步汇率源</button>
+        <button class="btn primary" onclick="openFx()">手动录入</button></div></div></div>
+  <div class="panel"><h3>汇率历史时间线</h3><div style="overflow-x:auto"><table>
+    <thead><tr><th>生效日期</th><th>1 USD = ? CNY</th><th>来源</th><th>备注</th><th></th></tr></thead><tbody>
+    ${fxs.map(f=>`<tr><td>${f.date}</td><td class="num">${f.rate}</td>
+      <td><span class="badge ${f.source==='manual'?'CNY':'CNY'}">${f.source==='manual'?'✍ 手动':'⟳ 自动'}</span></td>
+      <td>${f.note||''}</td>
+      <td>${f.source==='manual'?`<button class="btn sm warn" onclick="delFx('${f.date}')">×</button>`:'<span class="muted">不可删</span>'}</td></tr>`).join('')}</tbody></table></div>
+    <div class="legend">正式版中此页归入<b>管理后台</b>。自动汇率每日定时拉取(如每日 08:00),也可手动点同步。同一日期若管理员也录入,以管理员为准。</div></div>`;
+}
+
+/* ---- 设置 ---- */
+function viewSet(){
+  const cfg=cfgOf(S);
+  return `<div class="grid2">
+    <div class="panel"><h3>成本核算口径</h3>
+      <div class="optlist">
+        <div class="opt ${cfg.costMethod==='wavg'?'on':''}" onclick="setCost('wavg')">
+          <b>摊薄加权平均(默认)</b><div>卖出按"卖出前均价"结转成本;做 T 后成本随价差升降,最符合散户直觉。</div></div>
+        <div class="opt ${cfg.costMethod==='fifo'?'on':''}" onclick="setCost('fifo')">
+          <b>FIFO 先进先出</b><div>卖出优先结转最早买入的批次;已实现收益与剩余成本口径与摊薄不同。</div></div>
+      </div>
+      <div class="hint">切换后全站持仓与报表<b>即时重算</b>(不修改任何原始记录)。可在右侧对比两种口径的差异。</div>
+      <h3 style="margin-top:20px">现金分红处理</h3>
+      <div class="switch" onclick="toggleDiv()">
+        <div class="txt"><b>分红冲减成本</b><div>${cfg.dividendReducesCost?'已开启:分红降低持仓成本,不计入已实现收益。':'已关闭(默认):分红计入已实现收益,不改变持仓成本。'}</div></div>
+        <div class="toggle ${cfg.dividendReducesCost?'on':''}"></div></div>
+      <div class="hint">两种派系都有用户:A 派把分红当收益落袋;B 派用分红摊低成本。做成开关,随您习惯。</div>
+    </div>
+    <div class="panel"><h3>口径对比(当前数据)</h3>
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>口径</th><th>已实现(¥)</th><th>浮动(¥)</th><th>总盈亏(¥)</th></tr></thead><tbody id="cmpBody"></tbody></table></div>
+      <div class="legend">对比仅针对股票部分(分红开关影响已实现与成本,FIFO/摊薄影响卖出结转)。</div>
+      <h3 style="margin-top:20px">其他设置</h3>
+      <div class="legend">基准货币:<b>人民币 CNY</b> | 涨跌配色:<b>红涨绿跌</b>(正式版可切换)</div>
+    </div></div>`;
+}
+function cmpRow(label,S2){ let real=0,unreal=0;
+  S2.assets.filter(a=>a.type==='stock').forEach(a=>{const r=calcAsset(a,S2); real+=r.realCNY+r.divCNY; unreal+=r.unrealCNY;});
+  return {label,real:round2(real),unreal:round2(unreal),total:round2(real+unreal)}; }
+function renderCmp(){
+  const el=document.getElementById('cmpBody'); if(!el)return;
+  const base={...S,settings:{...cfgOf(S)}};
+  const wavg={...base,settings:{...base.settings,costMethod:'wavg'}};
+  const fifo={...base,settings:{...base.settings,costMethod:'fifo'}};
+  const rows=[cmpRow('摊薄 · 分红计入收益',{...wavg,settings:{...wavg.settings,dividendReducesCost:false}}),
+              cmpRow('摊薄 · 分红冲减成本',{...wavg,settings:{...wavg.settings,dividendReducesCost:true}}),
+              cmpRow('FIFO · 分红计入收益',{...fifo,settings:{...fifo.settings,dividendReducesCost:false}}),
+              cmpRow('FIFO · 分红冲减成本',{...fifo,settings:{...fifo.settings,dividendReducesCost:true}})];
+  el.innerHTML=rows.map(r=>`<tr><td>${r.label}</td><td class="num ${fxColor(r.real)}">${money(r.real)}</td>
+    <td class="num ${fxColor(r.unreal)}">${money(r.unreal)}</td><td class="num ${fxColor(r.total)}">${money(r.total)}</td></tr>`).join('');
+}
+function setCost(m){ S.settings.costMethod=m; save(); render(); toast('成本口径已切换为 '+(m==='fifo'?'FIFO':'摊薄')); }
+function toggleDiv(){ S.settings.dividendReducesCost=!S.settings.dividendReducesCost; save(); render(); toast('分红处理:'+(S.settings.dividendReducesCost?'冲减成本':'计入收益')); }
+
+/* ---- 数据 ---- */
+function viewData(){
+  const snaps=[...S.snapshots].sort((a,b)=>a.month<b.month?1:-1);
+  return `<div class="grid2">
+    <div class="panel"><h3>月末总资产快照(用于含浮动月/年收益)</h3>
+      <div class="row" style="gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input id="snapM" type="month" value="${MONTH()}" style="padding:8px;border:1px solid var(--line);border-radius:8px">
+        <input id="snapV" type="number" placeholder="月末总资产(¥)" style="flex:1;min-width:130px;padding:8px;border:1px solid var(--line);border-radius:8px">
+        <button class="btn primary" onclick="addSnap()">保存</button></div>
+      <table><thead><tr><th>月份</th><th>总资产(¥)</th><th></th></tr></thead><tbody>
+      ${snaps.map(s=>`<tr><td>${s.month}</td><td class="num">${money(s.total)}</td>
+        <td><button class="btn sm warn" onclick="delSnap('${s.month}')">×</button></td></tr>`).join('')}</tbody></table>
+      <div class="hint">月度含浮动收益 = 当月已实现收益 +(本月末总资产 - 上月末总资产 - 当月净投入)</div></div>
+    <div class="panel"><h3>数据备份 / 恢复</h3>
+      <p class="muted">原型数据保存在本机浏览器(localStorage)。正式版:Docker 后端 + SQLite 持久化 + JSON 导入导出。</p>
+      <div class="row" style="gap:10px;flex-wrap:wrap">
+        <button class="btn primary" onclick="exportJSON()">导出 JSON</button>
+        <button class="btn" onclick="document.getElementById('imp').click()">导入 JSON</button>
+        <button class="btn warn" onclick="resetAll()">清空并恢复示例</button></div>
+      <div class="hint">导入会覆盖当前全部数据,请先导出备份。</div></div></div>`;
+}
+function emptyState(){return `<div class="panel empty">还没有任何投资记录<br><button class="btn primary" onclick="openAsset()" style="margin-top:12px">+ 新增第一笔投资</button></div>`;}
+
+/* ============================ 弹窗 ============================ */
+function show(html){ document.getElementById('modal').innerHTML=html; document.getElementById('mask').classList.add('show'); }
+function closeModal(){ document.getElementById('mask').classList.remove('show'); }
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1900); }
+document.getElementById('mask').addEventListener('click',e=>{ if(e.target.id==='mask')closeModal(); });
+const gv=id=>{ const e=document.getElementById(id); return e?e.value.trim():''; };
+
+function openAccount(id){
+  const a=id?S.accounts.find(x=>x.id===id):null;
+  show(`<h3>${a?'编辑':'新增'}账户</h3>
+    <div class="field"><label>账户名称 *</label><input id="ac_name" value="${a?a.name:''}" placeholder="如:华泰证券 / 招商银行"></div>
+    <div class="f2">
+      <div class="field"><label>类型</label><select id="ac_kind">${Object.entries(ACCKIND).map(([k,n])=>`<option value="${k}" ${a&&a.kind===k?'selected':''}>${n}</option>`).join('')}</select></div>
+      <div class="field"><label>主币种</label><select id="ac_ccy">${['CNY','USD'].map(k=>`<option value="${k}" ${a&&a.currency===k?'selected':''}>${k}</option>`).join('')}</select></div></div>
+    <div class="field"><label>备注</label><input id="ac_note" value="${a?(a.note||''):''}" placeholder="选填"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="saveAccount(${a?`'${a.id}'`:'null'})">保存</button></div>`);
+}
+function saveAccount(id){ const name=gv('ac_name'); if(!name)return toast('请填写账户名称');
+  if(id){ const a=S.accounts.find(x=>x.id===id); a.name=name; a.kind=gv('ac_kind'); a.currency=gv('ac_ccy'); a.note=gv('ac_note'); }
+  else S.accounts.push({id:uid('acc'),name,kind:gv('ac_kind'),currency:gv('ac_ccy'),note:gv('ac_note')});
+  save();closeModal();render();toast('已保存'); }
+function delAccount(id){ const n=S.assets.filter(a=>a.accountId===id).length;
+  if(!confirm(`删除该账户会同时删除其下 ${n} 个资产及全部记录,确定?`))return;
+  S.accounts=S.accounts.filter(a=>a.id!==id); S.assets=S.assets.filter(a=>a.accountId!==id);
+  S.events=S.events.filter(e=>S.assets.some(a=>a.id===e.assetId)); save();render();toast('已删除账户'); }
+
+function openAsset(id, presetAcct){
+  const a=id?S.assets.find(x=>x.id===id):null;
+  show(`<h3>${a?'编辑':'新增'}投资资产</h3>
+    <div class="field"><label>名称 *</label><input id="f_name" value="${a?a.name:''}" placeholder="如:贵州茅台 / 招银理财"></div>
+    <div class="f2">
+      <div class="field"><label>代码(选填)</label><input id="f_code" value="${a?(a.code||''):''}" placeholder="600519 / AAPL"></div>
+      <div class="field"><label>类型 *</label><select id="f_type" ${a?'disabled':''}>${Object.entries(TYPES).map(([k,n])=>`<option value="${k}" ${a&&a.type===k?'selected':''}>${n}</option>`).join('')}</select></div></div>
+    <div class="f2">
+      <div class="field"><label>所属账户 *</label><select id="f_acct">${S.accounts.map(x=>`<option value="${x.id}" ${(a?a.accountId:presetAcct)===x.id?'selected':''}>${x.name}</option>`).join('')}</select></div>
+      <div class="field"><label>市场</label><select id="f_market" ${a?'disabled':''}>
+        <option value="" ${a&&!a.market?'selected':''}>非股票(理财/债/基金)</option>
+        <option value="CN" ${a&&a.market==='CN'?'selected':''}>A股(CN)</option>
+        <option value="US" ${a&&a.market==='US'?'selected':''}>美股(US)</option></select></div></div>
+    <div class="f2">
+      <div class="field"><label>币种 *</label><select id="f_ccy" ${a?'disabled':''}>
+        <option value="CNY" ${a&&a.currency==='CNY'?'selected':''}>人民币 CNY</option>
+        <option value="USD" ${a&&a.currency==='USD'?'selected':''}>美元 USD</option></select></div>
+      <div class="field"><label>${a&&a.type!=='stock'?'当前市值(原币)':'最新价(原币)'}</label>
+        <input id="f_price" type="number" step="0.0001" value="${a?(a.type==='stock'?(a.price||0):(a.marketValue||0)):''}"></div></div>
+    <div class="hint">${a?'类型、市场、币种、账户创建后不可修改(可删后重建)。':'股票按"交易"记录(含分红/送股/拆分);理财、债券、基金按"现金流"记录(投入/赎回/分红利息)。A股与美股的记录方式相同,仅市场标签与币种不同。'}</div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button>
+      <button class="btn primary" onclick="saveAsset(${a?`'${a.id}'`:'null'})">保存</button></div>`);
+}
+function saveAsset(id){
+  const name=gv('f_name'); if(!name)return toast('请填写名称');
+  const price=parseFloat(gv('f_price'))||0;
+  if(id){ const a=S.assets.find(x=>x.id===id); a.name=name; a.code=gv('f_code');
+    if(a.type==='stock')a.price=price; else a.marketValue=price; }
+  else{ const type=gv('f_type'), market=gv('f_market');
+    S.assets.push({id:uid('a'),accountId:gv('f_acct'),name,code:gv('f_code'),market:type==='stock'?market:'',
+      type,currency:gv('f_ccy'),price:type==='stock'?price:0,marketValue:type==='stock'?0:price});
+    TAB='hold'; }
+  save();closeModal();render();toast('已保存');
+}
+function delAsset(id){ if(!confirm('删除该资产及全部记录?'))return;
+  S.assets=S.assets.filter(a=>a.id!==id); S.events=S.events.filter(e=>e.assetId!==id); save();render();toast('已删除'); }
+function editPrice(id){ const a=S.assets.find(x=>x.id===id), stk=a.type==='stock';
+  show(`<h3>更新${stk?'最新价':'当前市值'}</h3>
+    <div class="field"><label>${stk?'最新价('+a.currency+')':'当前市值('+a.currency+')'}</label>
+      <input id="p_v" type="number" step="0.0001" value="${stk?(a.price||0):(a.marketValue||0)}"></div>
+    <div class="hint">市值/最新价不受历史汇率影响;估值统一按最新汇率折算。</div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="savePrice('${id}')">保存</button></div>`);
+}
+function savePrice(id){ const a=S.assets.find(x=>x.id===id), v=parseFloat(gv('p_v'))||0;
+  if(a.type==='stock')a.price=v; else a.marketValue=v; save();closeModal();render();toast('已更新'); }
+
+function openTrade(id,preset){
+  const a=S.assets.find(x=>x.id===id), stk=a.type==='stock';
+  const opts=stk?[['buy','买入'],['sell','卖出'],['div','现金分红'],['bonus','送股/转股'],['split','拆分']]
+                :[['invest','投入'],['redeem','赎回'],['income','分红/利息']];
+  const cur=preset&&opts.some(o=>o[0]===preset)?preset:opts[0][0];
+  window.__cur={id,stk,type:cur,ccy:a.currency};
+  show(`<h3>${a.name} · 记录 <span class="badge acc">${accName(a.accountId)}</span></h3>
+    <div class="f2">
+      <div class="field"><label>日期 *</label><input id="t_date" type="date" value="${TODAY()}"></div>
+      <div class="field"><label>类型 *</label><select id="t_type" onchange="trType(this.value)">${opts.map(([k,n])=>`<option value="${k}" ${cur===k?'selected':''}>${n}</option>`).join('')}</select></div></div>
+    <div id="trFields"></div>
+    <div class="field"><label>备注</label><input id="t_note" placeholder="选填"></div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveTrade('${id}')">保存</button></div>`);
+  trType(cur);
+}
+function trFieldsHTML(){
+  const {type,ccy}=window.__cur;
+  const fxField=`<div class="field"><label>汇率(1 USD = ? CNY)← 锁定到本笔</label><input id="t_fx" type="number" step="0.0001" value="${ccy==='USD'?currentFx(S):1}" ${ccy==='CNY'?'disabled':''}></div>`;
+  if(type==='buy'||type==='sell')
+    return `<div class="f2"><div class="field"><label>数量(股)*</label><input id="t_qty" type="number" step="1"></div>
+      <div class="field"><label>成交价(${ccy})*</label><input id="t_price" type="number" step="0.0001"></div></div>
+      <div class="field"><label>手续费/佣金(含印花税、过户费)</label><input id="t_fee" type="number" step="0.01" value="0"></div>
+      ${fxField}<div class="field"><label><input type="checkbox" id="t_isT" style="width:auto"> 标记为做 T 交易(仅统计用)</label></div>`;
+  if(type==='div') return `<div class="field"><label>现金分红总额(${ccy})*</label><input id="t_amount" type="number" step="0.01"></div>${fxField}
+      <div class="hint">${cfgOf(S).dividendReducesCost?'当前设置:分红<b>冲减成本</b>(不改已实现)。':'当前设置:分红<b>计入已实现收益</b>(不改成本)。'}</div>`;
+  if(type==='bonus') return `<div class="field"><label>送股/转股数量(股)*</label><input id="t_qty" type="number" step="1"></div>${fxField}
+      <div class="hint">送股不花成本:股数增加、成本总额不变 → 摊薄成本自动下降。</div>`;
+  if(type==='split') return `<div class="field"><label>拆分比例(1 股 → N 股)*</label><input id="t_ratio" type="number" step="0.0001" value="2"></div>${fxField}
+      <div class="hint">拆股后 股数 × 比例,成本总额不变;填 0.5 表示合股。</div>`;
+  const isInvest=type==='invest';
+  return `<div class="field"><label>金额(${ccy})*</label><input id="t_amount" type="number" step="0.01"></div>
+    ${isInvest?`<div class="field"><label>手续费</label><input id="t_fee" type="number" step="0.01" value="0"></div>`:''}${fxField}`;
+}
+function trType(v){ if(window.__cur){ window.__cur.type=v; document.getElementById('trFields').innerHTML=trFieldsHTML(); } }
+function saveTrade(id){
+  const a=S.assets.find(x=>x.id===id), {stk,type}=window.__cur;
+  const date=gv('t_date'), note=gv('t_note');
+  const fxEl=document.getElementById('t_fx'), fx=fxEl?(parseFloat(fxEl.value)||1):1;
+  const fee=parseFloat(gv('t_fee'))||0;
+  const e={id:uid('e'),assetId:id,date,note,fx};
+  if(stk){
+    if(type==='buy'||type==='sell'){ const qty=parseFloat(gv('t_qty'))||0, price=parseFloat(gv('t_price'))||0;
+      if(qty<=0||price<=0)return toast('数量与成交价需大于0');
+      Object.assign(e,{kind:type,side:type,qty,price,fee,isT:document.getElementById('t_isT').checked?1:0}); }
+    else if(type==='div'){ const amount=parseFloat(gv('t_amount'))||0; if(amount<=0)return toast('分红金额需大于0'); Object.assign(e,{kind:'div',side:'div',amount}); }
+    else if(type==='bonus'){ const qty=parseFloat(gv('t_qty'))||0; if(qty<=0)return toast('送股数量需大于0'); Object.assign(e,{kind:'bonus',side:'bonus',qty}); }
+    else if(type==='split'){ const ratio=parseFloat(gv('t_ratio'))||0; if(ratio<=0)return toast('拆分比例需大于0'); Object.assign(e,{kind:'split',side:'split',ratio}); }
+  } else { const amt=parseFloat(gv('t_amount'))||0; if(amt<=0)return toast('金额需大于0'); Object.assign(e,{kind:type,amount:amt,fee}); }
+  S.events.push(e); save();
+  if(stk&&(type==='div'||type==='bonus'||type==='split')){
+    const hint= type==='div' ? `「${a.name}」已记录现金分红。现金分红通常伴随<b>除息</b>(股价会相应下调),请同步更新最新价。`
+      : type==='bonus' ? `「${a.name}」已记录送股/转股。送股通常伴随<b>除权</b>(股价会被摊薄),请同步更新最新价。`
+      : `「${a.name}」已记录拆分/合股。总市值不变但每股价格按比例变化,请同步更新最新价。`;
+    __postPrompt={id,name:a.name,hint};
+  }
+  closeModal();render();
+  if(__postPrompt) showPostPrompt();
+  else toast('已记录');
+}
+function showPostPrompt(){
+  const p=__postPrompt; if(!p)return; const a=S.assets.find(x=>x.id===p.id); if(!a){__postPrompt=null;return;}
+  const stk=a.type==='stock';
+  show(`<h3>⚠ 提醒:请同步最新价</h3>
+    <div class="switch" style="cursor:default"><div class="txt"><div style="font-size:12.5px;color:var(--txt);line-height:1.6">${p.hint}</div></div></div>
+    <div class="field"><label>${stk?'最新价('+a.currency+')':'当前市值('+a.currency+')'}</label>
+      <input id="pp_v" type="number" step="0.0001" value="${stk?(a.price||0):(a.marketValue||0)}"></div>
+    <div class="hint">及时更新现价,浮动盈亏才真实;不更新也可以稍后再在持仓卡片点「改现价」录入。</div>
+    <div class="actions"><button class="btn" onclick="__postPrompt=null;closeModal()">稍后</button>
+      <button class="btn primary" onclick="savePostPrice()">保存现价</button></div>`);
+}
+function savePostPrice(){ const p=__postPrompt; if(!p)return; const a=S.assets.find(x=>x.id===p.id);
+  const v=parseFloat(gv('pp_v')); if(!(v>=0))return toast('请填写有效价格');
+  if(a.type==='stock')a.price=v; else a.marketValue=v;
+  __postPrompt=null; save();closeModal();render();toast('已记录,现价已更新'); }
+function delEvent(eid){ S.events=S.events.filter(e=>e.id!==eid); save();render();toast('已删除'); }
+
+function openFx(){ show(`<h3>新增汇率</h3>
+    <div class="f2"><div class="field"><label>生效日期 *</label><input id="x_date" type="date" value="${TODAY()}"></div>
+      <div class="field"><label>1 USD = ? CNY *</label><input id="x_rate" type="number" step="0.0001" value="${currentFx(S)}"></div></div>
+    <div class="field"><label>备注</label><input id="x_note" placeholder="选填"></div>
+    <div class="hint warn">⚠ 新增汇率只作为"此后新记录"的默认值,不会回改任何历史记录的成本。</div>
+    <div class="actions"><button class="btn" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveFx()">保存</button></div>`); }
+function saveFx(){ const date=gv('x_date'),rate=parseFloat(gv('x_rate')); if(!(rate>0))return toast('汇率需大于0');
+  S.fx=S.fx.filter(f=>!(f.date===date&&f.source==='manual'));
+  S.fx.push({date,rate,note:gv('x_note'),source:'manual'});
+  S.fx.sort((a,b)=>a.date<b.date?-1:1);
+  save();closeModal();render();toast('手动汇率已录入(优先于自动源,仅影响后续记录)'); }
+function syncFx(){ // 原型:模拟拉取汇率源(正式版由后端定时拉取)
+  const fs=cfgOf(S).fxSource||{};
+  const demo=6.7+Math.round(Math.random()*40)/1000;   // 模拟波动
+  const t=TODAY();
+  S.fx=S.fx.filter(f=>!(f.date===t&&f.source==='auto'));
+  S.fx.push({date:t,rate:demo,note:'自动同步',source:'auto'});
+  S.fx.sort((a,b)=>a.date<b.date?-1:1);
+  S.settings.fxSource={...fs,lastDate:t,lastRate:demo,lastFetched:new Date().toISOString().slice(0,16).replace('T',' ')};
+  save();render();toast('已同步:1 USD = ¥'+demo.toFixed(4)+'(管理员手动优先)'); }
+function delFx(d){ S.fx=S.fx.filter(f=>!(f.date===d&&f.source==='manual')); save();render();toast('已删除'); }
+
+function addSnap(){ const m=gv('snapM'),v=parseFloat(gv('snapV')); if(!m||!(v>=0))return toast('请填写月份与金额');
+  S.snapshots=S.snapshots.filter(s=>s.month!==m); S.snapshots.push({month:m,total:v}); S.snapshots.sort((a,b)=>a.month<b.month?-1:1);
+  save();render();toast('快照已保存'); }
+function delSnap(m){ S.snapshots=S.snapshots.filter(s=>s.month!==m); save();render();toast('已删除'); }
+
+function exportJSON(){ const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const u=URL.createObjectURL(b), a=document.createElement('a'); a.href=u; a.download='投资管家备份_'+TODAY()+'.json'; a.click(); URL.revokeObjectURL(u); toast('已导出'); }
+function importJSON(e){ const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>{ try{ const j=JSON.parse(r.result); if(!j.assets||!j.fx)throw 0; S=j; save(S); render(); toast('导入成功'); }catch(x){ toast('文件格式不正确'); } };
+  r.readAsText(f); e.target.value=''; }
+function resetAll(){ if(!confirm('清空全部数据并恢复示例?'))return; S=seed(); save(S); render(); toast('已重置'); }
+
+render();
+setTimeout(renderCmp,0);
+</script>
+</body>
+</html>

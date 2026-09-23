@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/.vite
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/backups
+.git
+.gitignore
+*.log
+.env
+.env.local
+coverage
+**/.DS_Store
+**/Thumbs.db

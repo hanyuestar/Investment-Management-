@@ -1,0 +1,468 @@
+/* ============================================================
+   投资管家 · 全局主题（与设计原型统一：藏青导航 + 卡片 + 红涨绿跌）
+   ============================================================ */
+:root {
+  --navy: #1f3a5f;
+  --navy-dark: #18304d;
+  --navy-light: #2c507e;
+  --bg: #f3f5f8;
+  --card: #ffffff;
+  --border: #e6eaf0;
+  --text: #222831;
+  --muted: #8a94a3;
+  --up: #e0463e;   /* 盈利/上涨：红（A股习惯） */
+  --down: #1c9c5a; /* 亏损/下跌：绿 */
+  --accent: #17a2b8;
+  --warn: #e8a93b;
+  --soft: #f7f9fc;
+
+  --el-color-primary: #2b6cb0;
+  --el-border-radius-base: 6px;
+  --el-font-size-base: 13px;
+}
+
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+}
+
+/* ---------- 数字 ---------- */
+.num { font-family: 'SF Mono', 'JetBrains Mono', Consolas, monospace; font-variant-numeric: tabular-nums; }
+.up { color: var(--up); }
+.down { color: var(--down); }
+.muted { color: var(--muted); }
+.bold { font-weight: 700; }
+
+/* ---------- 顶部导航 ---------- */
+.topbar {
+  background: linear-gradient(90deg, var(--navy-dark), var(--navy) 55%, var(--navy-light));
+  color: #fff;
+  padding: 0 20px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(24, 48, 77, .25);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar .logo {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: .5px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.topbar .logo .ver { font-size: 11px; opacity: .65; font-weight: 400; }
+.topbar .nav-pills {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: none;
+  padding: 4px 0;
+}
+.topbar .nav-pills::-webkit-scrollbar { display: none; }
+.topbar .nav-pills a {
+  color: rgba(255, 255, 255, .82);
+  text-decoration: none;
+  padding: 6px 13px;
+  border-radius: 16px;
+  font-size: 13px;
+  white-space: nowrap;
+  transition: all .15s;
+}
+.topbar .nav-pills a:hover { background: rgba(255, 255, 255, .12); color: #fff; }
+.topbar .nav-pills a.router-link-active { background: #fff; color: var(--navy); font-weight: 600; }
+.topbar .top-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.topbar .user-name { color: #fff; font-size: 13px; }
+
+/* ---------- 主体 ---------- */
+.page-body { padding: 16px 20px 40px; max-width: 1500px; margin: 0 auto; }
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 4px 0 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.page-head h2 { font-size: 18px; margin: 0; font-weight: 700; }
+.page-head .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.page-head .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* ---------- 卡片 ---------- */
+.card {
+  background: var(--card);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(31, 58, 95, .06);
+  border: 1px solid var(--border);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.card h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card h3 .hint { font-size: 12px; font-weight: 400; color: var(--muted); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.grid-sidebar { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+@media (max-width: 1100px) {
+  .grid-2, .grid-3, .grid-sidebar { grid-template-columns: 1fr; }
+}
+
+/* ---------- KPI ---------- */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+@media (max-width: 1280px) { .kpi-row { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 640px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+.kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, .05);
+  transition: box-shadow .2s;
+}
+.kpi:hover { box-shadow: 0 3px 10px rgba(31, 58, 95, .12); }
+.kpi .label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.kpi .val { font-size: 20px; font-weight: 700; line-height: 1.2; font-family: Consolas, monospace; }
+.kpi .sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+.kpi.flash .val, .kpi.flash .sub { animation: flash 1s ease; }
+@keyframes flash {
+  0% { background: #fff6d6; }
+  100% { background: transparent; }
+}
+
+/* ---------- 持仓看板 ---------- */
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.asset-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: 0 1px 3px rgba(31, 58, 95, .05);
+  transition: transform .12s, box-shadow .12s;
+}
+.asset-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(31, 58, 95, .12); }
+.asset-card .ac-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.asset-card .ac-name { font-weight: 700; font-size: 14px; }
+.asset-card .ac-code { color: var(--muted); font-size: 11px; margin-top: 2px; }
+.asset-card .ac-mv { font-size: 18px; font-weight: 700; text-align: right; font-family: Consolas, monospace; }
+.asset-card .ac-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; padding: 3px 0; border-top: 1px dashed #eef1f5; }
+.asset-card .ac-row b { color: #222; font-family: Consolas, monospace; font-weight: 600; }
+.asset-card .ac-actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ---------- 徽章 ---------- */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 11px;
+  font-size: 11px;
+  line-height: 18px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.badge-stock { background: #e8f0fb; color: #2b6cb0; }
+.badge-fund { background: #e6f7f4; color: #0f8a78; }
+.badge-wealth { background: #f3eefb; color: #7c52b8; }
+.badge-bond { background: #fdf3e2; color: #b5791c; }
+.badge-cn { background: #fdecec; color: #c83a32; }
+.badge-us { background: #e9f1ff; color: #2b58c0; }
+.badge-manual { background: #e8f0fb; color: #2b6cb0; }
+.badge-auto { background: #e9f8ef; color: #1c9c5a; }
+.badge-fallback { background: #f0f1f3; color: #8a94a3; }
+.badge-warn { background: #fdf3e2; color: #b5791c; }
+.badge-danger { background: #fdecec; color: #c83a32; }
+.badge-ok { background: #e9f8ef; color: #1c9c5a; }
+.badge-gray { background: #eef1f5; color: #6b7686; }
+
+/* ---------- 表格 ---------- */
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  background: var(--soft);
+}
+.tbl td { padding: 9px 10px; border-bottom: 1px solid #f0f2f5; }
+.tbl tr:hover td { background: #fafbfd; }
+.tbl .num { text-align: right; }
+.tbl th.num { text-align: right; }
+.tbl .col-actions { text-align: right; white-space: nowrap; }
+
+/* ---------- 按钮 ---------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all .15s;
+  text-decoration: none;
+}
+.btn:hover { background: var(--navy-light); border-color: var(--navy-light); }
+.btn.secondary { background: #fff; color: var(--navy); }
+.btn.secondary:hover { background: #f2f6fb; }
+.btn.danger { background: #fff; color: #d0443b; border-color: #e3b4b0; }
+.btn.danger:hover { background: #fdecec; }
+.btn.sm { padding: 3px 9px; font-size: 12px; }
+.btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Element Plus 细节统一 */
+.el-button--primary { --el-button-bg-color: var(--navy); --el-button-border-color: var(--navy); --el-button-hover-bg-color: var(--navy-light); --el-button-hover-border-color: var(--navy-light); }
+.el-table { font-size: 13px; }
+.el-table th.el-table__cell { background: var(--soft) !important; color: var(--muted); }
+.el-dialog { border-radius: 10px; }
+.el-dialog__title { font-weight: 700; }
+.el-form-item__label { font-size: 13px; }
+.el-tag { border-radius: 11px; }
+.el-menu { border-right: none !important; }
+
+/* ---------- 杂项 ---------- */
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 48px 20px;
+}
+.empty .big { font-size: 34px; margin-bottom: 10px; opacity: .5; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.toolbar .spacer { flex: 1; }
+.form-tip { color: var(--muted); font-size: 12px; line-height: 1.6; }
+.alloc-bar { height: 8px; border-radius: 4px; background: #eef1f5; overflow: hidden; min-width: 90px; }
+.alloc-bar > div { height: 100%; border-radius: 4px; }
+.alert-line { padding: 8px 12px; border-radius: 6px; margin-bottom: 8px; font-size: 13px; }
+.alert-line.danger { background: #fdecec; color: #b0352e; }
+.alert-line.warn { background: #fdf3e2; color: #9a6712; }
+
+/* 预警列表（RiskView 集中度 / 价格预警） */
+.alert-list { list-style: none; margin: 0; padding: 0; }
+.alert-list li { padding: 8px 11px; border-radius: 6px; margin-bottom: 7px; font-size: 13px; line-height: 1.5; }
+.alert-list li.alert-warn { background: #fdf3e2; color: #9a6712; }
+.alert-list li.alert-danger { background: #fdecec; color: #b0352e; }
+.alert-list li:last-child { margin-bottom: 0; }
+.chart-box { width: 100%; }
+.login-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--navy-dark), var(--navy) 60%, var(--navy-light));
+}
+.login-card {
+  width: 380px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 34px 32px 26px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .25);
+}
+.login-card .title { text-align: center; font-size: 21px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.login-card .subtitle { text-align: center; color: var(--muted); font-size: 12px; margin-bottom: 22px; }
+.kv-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #eef1f5; }
+.kv-line:last-child { border-bottom: none; }
+.code-inline, code { background: #f2f5f9; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+
+/* 涨跌语义色（与红涨绿跌一致，供文字标注使用） */
+.pos { color: var(--up); }
+.neg { color: var(--down); }
+
+/* 表格横向滚动容器：窄屏下保留完整列，不做列裁剪 */
+.tbl-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* 纯文字说明型表格：允许文字换行，不强制横向滚动 */
+.tbl-wrap.is-text .tbl { min-width: 0; }
+
+/* ============================================================
+   响应式 · 全局移动端适配
+   断点：≤1024px（平板）、≤768px（手机）、≤420px（小屏手机）
+   原则：PC 布局不变，移动端改为单列堆叠 + 触控友好尺寸 + 横向滚动降级
+   ============================================================ */
+
+/* ---------- 平板 ≤1024px ---------- */
+@media (max-width: 1024px) {
+  .kpi-row { grid-template-columns: repeat(4, 1fr); }
+  .board { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+  /* 同 mobile：栅格子项允许收缩，避免内部固定宽度元素撑破视口 */
+  .grid-2 > *, .grid-3 > *, .grid-sidebar > * { min-width: 0; }
+  .card, .chart-box { min-width: 0; max-width: 100%; }
+}
+
+/* ---------- 手机 ≤768px ---------- */
+@media (max-width: 768px) {
+  body { font-size: 13px; }
+
+  /* 顶栏与主体留白收紧，改用安全区适配 */
+  .topbar {
+    padding: 0 12px;
+    gap: 10px;
+    height: 52px;
+  }
+  .page-body {
+    padding: 12px 12px calc(28px + env(safe-area-inset-bottom, 0px));
+    max-width: none;
+  }
+
+  /* 单列堆叠：所有栅格降级 */
+  .grid-2,
+  .grid-3,
+  .grid-sidebar { grid-template-columns: 1fr; gap: 12px; }
+
+  /* ⚠ 关键修复：栅格/弹性子项默认 min-width:auto（=min-content），
+     会被内部固定宽度元素（ECharts canvas、el-table 固定列、min-width 表格）
+     撑破视口，导致整页横向溢出。显式归零让子项可收缩、由内部滚动容器接管。 */
+  .grid-2 > *,
+  .grid-3 > *,
+  .grid-sidebar > *,
+  .board,
+  .board > *,
+  .card,
+  .chart-box { min-width: 0; }
+
+  .card,
+  .chart-box,
+  .el-table,
+  .tbl-wrap { max-width: 100%; }
+
+  /* 允许长数字/长文案换行，避免撑开容器 */
+  .card { overflow-wrap: anywhere; }
+  .tbl-wrap { min-width: 0; }
+
+  /* KPI 两列 */
+  .kpi-row { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+  .kpi { padding: 10px 12px; }
+  .kpi .val { font-size: 17px; }
+  .kpi .label { font-size: 11px; }
+  .kpi .sub { font-size: 10px; }
+
+  /* 卡片内边距与标题 */
+  .card { padding: 13px; border-radius: 8px; margin-bottom: 12px; }
+  .card h3 { font-size: 14px; flex-wrap: wrap; }
+
+  /* 页头：标题与操作按钮改为纵向堆叠，按钮整行可点 */
+  .page-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .page-head h2 { font-size: 17px; }
+  .page-head .actions { width: 100%; }
+  .page-head .actions > * { flex: 1; min-width: 0; }
+  .page-head .actions .el-button { width: 100%; margin-left: 0; }
+
+  /* 工具栏：筛选控件整行铺满，触控友好 */
+  .toolbar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .toolbar > * { width: 100% !important; }
+  .toolbar .el-select,
+  .toolbar .el-input,
+  .toolbar .el-date-editor,
+  .toolbar .el-input-number { width: 100% !important; }
+  .toolbar .spacer { display: none; }
+  .toolbar .el-radio-group { display: flex; flex-wrap: wrap; }
+  .toolbar .el-radio-button { flex: 1; }
+  .toolbar .el-radio-button__inner { width: 100%; }
+
+  /* 持仓看板：单列，卡片操作按钮平分整行 */
+  .board { grid-template-columns: 1fr; gap: 10px; }
+  .asset-card { padding: 12px; }
+  .asset-card .ac-mv { font-size: 16px; }
+  .asset-card .ac-actions { gap: 8px; }
+  .asset-card .ac-actions .el-button {
+    flex: 1 1 calc(50% - 4px);
+    margin-left: 0;
+    min-height: 36px;
+  }
+  .asset-card:hover { transform: none; }
+
+  /* 自定义表格：横向滚动 + 触控行高 */
+  .tbl-wrap { margin: 0 -13px; padding: 0 13px; }
+  .tbl { min-width: 620px; }
+  .tbl th, .tbl td { padding: 10px 8px; white-space: nowrap; }
+  .tbl td .muted, .tbl td.bold { white-space: normal; min-width: 90px; }
+
+  /* Element Plus 表格：紧凑化 + 触控尺寸 */
+  .el-table { font-size: 12.5px; }
+  .el-table th.el-table__cell,
+  .el-table td.el-table__cell { padding: 9px 0; }
+  .el-table .cell { padding: 0 8px; }
+
+  /* 按钮：满足 40px 最小触控高度（Apple HIG / Material 建议 ≥44px，此处取折中） */
+  .el-button { min-height: 38px; }
+  .el-button--small { min-height: 34px; padding: 8px 12px; }
+  .el-button.is-link { min-height: 32px; }
+  .btn { min-height: 38px; }
+  .btn.sm { min-height: 32px; }
+
+  /* 表单：标签顶置，控件铺满 */
+  .el-form-item { display: block; margin-bottom: 16px; }
+  .el-form-item__label {
+    width: 100% !important;
+    text-align: left;
+    justify-content: flex-start;
+    padding: 0 0 6px;
+    height: auto;
+    line-height: 1.4;
+  }
+  .el-form-item__content { margin-left: 0 !important; }
+  .el-form-item__content > .el-input,
+  .el-form-item__content > .el-input-number,
+  .el-form-item__content > .el-select,
+  .el-form-item__content > .el-date-editor { width: 100% !important; }
+  .el-form-item__content .el-input-number { width: 100% !important; }
+
+  /* 弹窗：接近全屏，内容可滚动，按钮整行 */
+  .el-dialog {
+    width: 94% !important;
+    max-width: 94vw;
+    margin-top: 8vh !important;
+    border-radius: 12px;
+  }
+  .el-dialog__body { padding: 16px 14px; max-height: 68vh; overflow-y: auto; }
+  .el-dialog__header { padding: 16px 14px 8px; }
+  .el-dialog__footer { padding: 10px 14px 16px; }
+  .el-dialog__footer .el-button { min-width: 84px; }
+  .el-message-box { width: 90% !important; max-width: 90vw; }
+
+  /* 登录 / 注册卡片：窄屏铺满 */
+  .login-wrap { padding: 16px; align-items: flex-start; padding-top: 8vh; }
+  .login-card { width: 100%; max-width: 420px; padding: 26px 20px 20px; }
+
+  /* 图表容器：高度收敛 */
+  .chart-box { min-height: 220px; }
+
+  /* 杂项：进度条最小宽度与徽章换行 */
+  .alloc-bar { min-width: 60px; }
+  .badge { padding: 2px 7px; font-size: 10.5px; }
+  .alert-line { font-size: 12.5px; padding: 8px 10px; }
+  .empty { padding: 32px 16px; }
+  .kv-line { font-size: 12.5px; }
+}
+
+/* ---------- 小屏手机 ≤420px ---------- */
+@media (max-width: 420px) {
+  /* 极窄屏 KPI 仍两列，但字距压缩 */
+  .kpi .val { font-size: 15px; }
+  .kpi .sub { display: none; }
+  .page-body { padding: 10px 10px calc(24px + env(safe-area-inset-bottom, 0px)); }
+  .card { padding: 11px; }
+  .tbl-wrap { margin: 0 -11px; padding: 0 11px; }
+  .el-dialog { width: 96% !important; max-width: 96vw; }
+  .asset-card .ac-actions .el-button { flex: 1 1 100%; }
+}

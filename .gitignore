@@ -1,0 +1,58 @@
+# ============ 依赖 ============
+node_modules/
+**/node_modules/
+web/.vite/
+.pnp.*
+.yarn/
+
+# ============ 构建产物 ============
+web/dist/
+web/dist-ssr/
+*.tsbuildinfo
+.vite/
+
+# ============ 运行时数据（严禁上传） ============
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/backups/*
+!data/backups/.gitkeep
+/backups/
+!data/.gitkeep
+
+# ============ 环境变量与密钥 ============
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ============ 日志 ============
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ============ 编辑器 / 系统垃圾 ============
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+~$*
+
+# ============ 测试与临时文件 ============
+server/test/backups/*
+!server/test/backups/.gitkeep
+.nyc_output/
+coverage/
+*.tmp
+*.bak
+.cache/
+
+# ============ 项目文档（Wiki 源，只推送到 GitHub Wiki，不进代码仓库） ============
+docs/
