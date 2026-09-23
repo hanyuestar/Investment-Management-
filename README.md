@@ -14,31 +14,31 @@
 
 | 总览 · 8 张 KPI + 持仓看板 + 类型分布 | 绩效 · XIRR / TWR / 基准 α 与月度对比 |
 |---|---|
-| ![总览](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-dashboard.png) | ![绩效](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-performance.png) |
+| ![总览](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-dashboard.png) | ![绩效](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-performance.png) |
 
 | 配置 · 大类环形图 + 目标比例与再平衡建议 | 风险 · 持仓集中度 + 止盈止损预警 |
 |---|---|
-| ![配置](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-allocation.png) | ![风险](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-risk.png) |
+| ![配置](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-allocation.png) | ![风险](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-risk.png) |
 
 **更多页面**
 
 | 交易流水 · 买卖/分红/送股/拆分与锁定汇率 | 持仓 · 按类型筛选与关键词搜索 |
 |---|---|
-| ![交易流水](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-transactions.png) | ![持仓](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-holdings.png) |
+| ![交易流水](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-transactions.png) | ![持仓](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-holdings.png) |
 
 | 税务 · 分红税分档与资本利得明细 | 收益报表 · 月度/年度已实现与含浮动 |
 |---|---|
-| ![税务](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-tax.png) | ![收益报表](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-reports.png) |
+| ![税务](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-tax.png) | ![收益报表](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-reports.png) |
 
 | 定投 · 按月计划与幂等批量生成 | 管理后台 · 用户 / 汇率 / SMTP |
 |---|---|
-| ![定投](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-dca.png) | ![管理后台](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/desktop-admin.png) |
+| ![定投](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-dca.png) | ![管理后台](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/desktop-admin.png) |
 
 **移动端适配**（≤768px 自动切换：抽屉导航 + 单列堆叠 + 宽表卡片化）
 
 | 抽屉导航（汉堡按钮唤出，含账户视角切换） | 交易流水卡片化（字段与桌面表格一致） |
 |---|---|
-| ![移动端抽屉导航](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/mobile-drawer.png) | ![移动端交易流水](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@main/screenshots/mobile-transactions.png) |
+| ![移动端抽屉导航](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/mobile-drawer.png) | ![移动端交易流水](https://cdn.jsdelivr.net/gh/hanyuestar/Investment-Management-@v1.0.0/screenshots/mobile-transactions.png) |
 
 ---
 
