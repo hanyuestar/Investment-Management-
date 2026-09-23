@@ -111,9 +111,9 @@
         </nav>
 
         <div class="drawer-foot">
-          <el-button style="width: 100%" @click="onUserCmd('settings')">系统设置</el-button>
-          <el-button style="width: 100%" @click="onUserCmd('data')">数据管理</el-button>
-          <el-button style="width: 100%" type="danger" plain @click="onUserCmd('logout')">退出登录</el-button>
+          <el-button @click="onUserCmd('settings')">系统设置</el-button>
+          <el-button @click="onUserCmd('data')">数据管理</el-button>
+          <el-button type="danger" plain @click="onUserCmd('logout')">退出登录</el-button>
         </div>
       </div>
     </el-drawer>
@@ -237,9 +237,23 @@ async function onUserCmd(cmd) {
 }
 .drawer-nav-item:active { background: #eef2f8; }
 .drawer-nav-item.router-link-active { background: var(--navy); color: #fff; font-weight: 600; }
+/* 底部操作：三个 4 字按钮**一行等分**（放得下就不换行），尺寸与位置完全对齐。
+   注意 Element Plus 会给相邻 .el-button 加 margin-left:12px，必须显式归零，
+   否则第 2、3 个按钮会被右推并溢出（曾导致错位）。 */
 .drawer-foot {
-  display: flex; flex-direction: column; gap: 8px;
-  border-top: 1px solid var(--border); padding-top: 12px;
+  display: flex;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.drawer-foot .el-button {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: 0;
+  padding-left: 2px;
+  padding-right: 2px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 /* ============================================================

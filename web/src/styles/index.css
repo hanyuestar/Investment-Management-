@@ -168,7 +168,23 @@ body {
 .asset-card .ac-mv { font-size: 18px; font-weight: 700; text-align: right; font-family: Consolas, monospace; }
 .asset-card .ac-row { display: flex; justify-content: space-between; font-size: 12px; color: #555; padding: 3px 0; border-top: 1px dashed #eef1f5; }
 .asset-card .ac-row b { color: #222; font-family: Consolas, monospace; font-weight: 600; }
-.asset-card .ac-actions { margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+/* 持仓卡片操作区：录入 / 编辑 / 预警 / 删除 四个按钮**始终等分同一行**。
+   卡片在栅格中最窄约 240px，故不换行 + 等分宽度 + 压缩左右内边距（文字为 2 字，够放）。 */
+.asset-card .ac-actions {
+  margin-top: 10px;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+.asset-card .ac-actions .el-button {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: 0;
+  padding-left: 2px;
+  padding-right: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+}
 
 /* ---------- 徽章 ---------- */
 .badge {
@@ -379,16 +395,12 @@ body {
   .toolbar .el-radio-button { flex: 1; }
   .toolbar .el-radio-button__inner { width: 100%; }
 
-  /* 持仓看板：单列，卡片操作按钮平分整行 */
+  /* 持仓卡片：单列，操作按钮仍保持一行（等分），仅抬高触控高度 */
   .board { grid-template-columns: 1fr; gap: 10px; }
   .asset-card { padding: 12px; }
   .asset-card .ac-mv { font-size: 16px; }
-  .asset-card .ac-actions { gap: 8px; }
-  .asset-card .ac-actions .el-button {
-    flex: 1 1 calc(50% - 4px);
-    margin-left: 0;
-    min-height: 36px;
-  }
+  .asset-card .ac-actions { gap: 6px; }
+  .asset-card .ac-actions .el-button { min-height: 38px; }
   .asset-card:hover { transform: none; }
 
   /* 自定义表格：横向滚动 + 触控行高 */
@@ -464,5 +476,6 @@ body {
   .card { padding: 11px; }
   .tbl-wrap { margin: 0 -11px; padding: 0 11px; }
   .el-dialog { width: 96% !important; max-width: 96vw; }
-  .asset-card .ac-actions .el-button { flex: 1 1 100%; }
+  /* 极窄屏卡片约 330px 宽，4 个按钮等分仍有约 78px/个，无需换行 */
+  .asset-card .ac-actions { gap: 4px; }
 }
