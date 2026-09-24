@@ -530,7 +530,12 @@
         });
       });
       flows.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
-      if (s.totalAssets > 1e-9) flows.push({ date: asOf, amount: s.totalAssets, assetId: null, terminal: true, kind: 'totalAssets' });
+      /* 期末流入必须取**真实可变现总值**（持仓市值 + 账户现金），
+         不能用展示口径 totalAssets（= 累计投入 + 累计收益）——
+         两者仅在无期初建仓时相等；有期初建仓时 totalAssets 会少算本金，
+         导致 XIRR 严重失真（实测：仅期初建仓 1 万→现值 1.2 万，末值取 totalAssets 得 −80%，实际应为 +20%）。 */
+      const realizable = round2(s.mv + s.cash);
+      if (realizable > 1e-9) flows.push({ date: asOf, amount: realizable, assetId: null, terminal: true, kind: 'realizable' });
     } else {
       /* ── 兼容口径：未记录出入金时，按证券流水近似 ── */
       (S.assets || []).filter(inAcc).forEach(a => {

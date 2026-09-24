@@ -351,5 +351,31 @@ const near = (name, got, want, tol = 0.001) => {
   eq('清仓后账户口径收益', s5.profitAccount, 2000, 0.01);
 }
 
+/* =========================================================
+ * 场景21 回归：XIRR 末值必须取「真实可变现总值」(mv + cash)
+ * 曾误用展示口径 totalAssets，导致「仅期初建仓」场景严重失真
+ * ========================================================= */
+{
+  console.log('\n— 场景21 XIRR 末值口径 —');
+  const d365 = (() => { const d = new Date(); d.setDate(d.getDate() - 365); return d.toISOString().slice(0, 10); })();
+  const S = {
+    fx: [{ date: '2024-01-01', rate: 7, source: 'manual' }], settings: {},
+    accounts: [{ id: 'A' }],
+    assets: [{ id: 'F1', accountId: 'A', name: '基金', type: 'fund', currency: 'CNY', unitPrice: 1.2 }],
+    events: [{ assetId: 'F1', date: d365, kind: 'opening', qty: 10000, price: 1, amount: 10000, fx: 1 }],
+    cashFlows: [], snapshots: [],
+  };
+  const x = C.portfolioXirr(S);
+  eq('仅期初建仓 1 万→现值 1.2 万 XIRR ≈ +20%', x, 0.2, 0.005);
+  const s = C.summary(S);
+  eq('展示口径 总资产 = 0+2000', s.totalAssets, 2000, 0.01);
+  eq('真实可变现 = 12000', s.mv + s.cash, 12000, 0.01);
+  const fl = C.portfolioFlows(S);
+  const t0 = new Date(fl[0].date).getTime();
+  const npv = fl.reduce((a, f) => a + f.amount / Math.pow(1 + x, (new Date(f.date).getTime() - t0) / 31536000000), 0);
+  eq('XIRR 定义式 NPV≈0', npv, 0, 1);
+  eq('末值类型为 realizable（非 totalAssets）', fl[fl.length - 1].kind === 'realizable' ? 1 : 0, 1, 0.01);
+}
+
 console.log(`\n===== 结果: ${pass} 通过, ${fail} 失败 =====`);
 process.exit(fail ? 1 : 0);
