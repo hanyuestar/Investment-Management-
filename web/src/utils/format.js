@@ -55,15 +55,3 @@ export function currentMonth() {
   return todayStr().slice(0, 7);
 }
 
-export function typeOf(asset) {
-  return asset?.type || '';
-}
-export function isStock(asset) {
-  return asset?.type === 'stock';
-}
-
-export function fxText(assetOrCcy, fx) {
-  const ccy = typeof assetOrCcy === 'string' ? assetOrCcy : assetOrCcy?.currency;
-  if (ccy !== 'USD') return '';
-  return `汇率 ${Number(fx).toFixed(4)}`;
-}

@@ -36,7 +36,8 @@ function jobMonthlySnapshot() {
   let n = 0;
   for (const u of users) {
     try {
-      const total = portfolio.computeAll(u.id).kpis.total;
+      /* v6 起 kpis 已无 total 字段（改用 mv = 持仓市值），快照即持仓市值口径 */
+      const total = portfolio.computeAll(u.id).kpis.mv;
       if (!(total > 0)) continue;
       db.prepare(`INSERT INTO snapshot (user_id,month,total) VALUES (?,?,?)
                   ON CONFLICT(user_id,month) DO UPDATE SET total=excluded.total`).run(u.id, month, total);
@@ -110,8 +111,7 @@ async function jobBackup() {
 /** 判断今天是否本月最后一天 */
 function isLastDayOfMonth() {
   const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth() + 1, 1).getDate() === 1 &&
-    new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() === d.getDate();
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() === d.getDate();
 }
 
 function startScheduler() {

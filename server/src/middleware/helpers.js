@@ -5,10 +5,7 @@ const asyncHandler = fn => (req, res, next) => Promise.resolve(fn(req, res, next
 
 const badRequest = (res, msg) => res.status(400).json({ error: msg });
 const notFound = (res, msg = '记录不存在') => res.status(404).json({ error: msg });
-const forbidden = (res, msg = '无权操作该资源') => res.status(403).json({ error: msg });
 
-const isNum = v => typeof v === 'number' && isFinite(v);
-const posNum = v => isNum(v) && v > 0;
 
 const USERNAME_RE = /^[\w一-龥][\w一-龥.\-]{2,29}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,6 +26,6 @@ function ownedRow(db, table, id, userId, idCol = 'id') {
 }
 
 module.exports = {
-  asyncHandler, badRequest, notFound, forbidden,
-  isNum, posNum, USERNAME_RE, EMAIL_RE, validateRegistration, ownedRow,
+  asyncHandler, badRequest, notFound,
+  USERNAME_RE, EMAIL_RE, validateRegistration, ownedRow,
 };

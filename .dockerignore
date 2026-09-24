@@ -13,3 +13,18 @@ data/backups
 coverage
 **/.DS_Store
 **/Thumbs.db
+# ── v7 精简：以下目录不是构建输入，排除以缩小构建上下文 ──
+design/
+screenshots/
+docs/
+tests/
+.github/
+.workbuddy/
+server/test/
+server/data/
+data/
+*.md
+LICENSE*
+docker-compose.yml
+.env.example
+.dockerignore

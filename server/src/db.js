@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS asset (
   price        REAL NOT NULL DEFAULT 0,                -- 股票最新价（账户币种）
   market_value REAL NOT NULL DEFAULT 0,                -- 非股票当前市值（账户币种）
   unit_price   REAL NOT NULL DEFAULT 0,                -- 非股票单位净值/单价（账户币种；市值 = 份额 × 单位净值）
+  margin_cny   REAL NOT NULL DEFAULT 0,                -- v7 创建该资产时已使用的融资金额（CNY，欠券商）
   alerts_json  TEXT,
   created_at   TEXT NOT NULL
 );
@@ -79,7 +80,8 @@ CREATE TABLE IF NOT EXISTS event (
   price     REAL,
   amount    REAL,
   ratio     REAL,
-  fee       REAL NOT NULL DEFAULT 0,
+  fee       REAL NOT NULL DEFAULT 0,                -- 手续费（账户币种，含税；所有类型均可录）
+  margin_cny REAL NOT NULL DEFAULT 0,              -- v7 本次买入使用的融资额（CNY）
   fx        REAL NOT NULL DEFAULT 1,   -- ★记录时锁定汇率（1 USD = ? CNY）
   is_t      INTEGER NOT NULL DEFAULT 0,
   note      TEXT,
@@ -194,6 +196,8 @@ function addColumn(table, col, ddl) {
 
 function migrate() {
   addColumn('asset', 'unit_price', 'unit_price REAL NOT NULL DEFAULT 0');
+  addColumn('asset', 'margin_cny', 'margin_cny REAL NOT NULL DEFAULT 0');
+  addColumn('event', 'margin_cny', 'margin_cny REAL NOT NULL DEFAULT 0');
   addColumn('cash_flow', 'input_currency', 'input_currency TEXT');
   addColumn('cash_flow', 'input_amount', 'input_amount REAL');
   /* 老出入金记录：录入币种即账户币种、原始金额即 amount（幂等，只补 NULL 行） */

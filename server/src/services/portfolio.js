@@ -91,6 +91,18 @@ function computeAll(userId, accountId) {
         + `若入金是另外新转入的钱，可点「不再提示」。`,
     });
   }
+  /* 现金为负：需排除「融资买入」造成的正常负现金 —— 融资余额本质上就是这笔负现金 */
+  if (s.cash < -0.01 && s.cash < -(s.marginTotal || 0) - 1) {
+    warnings.push({
+      code: 'negative_cash',
+      level: 'warn',
+      title: '账户现金为负',
+      cash: s.cash, marginTotal: s.marginTotal,
+      msg: `账户现金为 ¥${s.cash}，已超出融资余额（¥${s.marginTotal}）可解释的范围，`
+        + `说明有**漏记的入金**。请到「出入金」页补录，否则总资产会偏低。`
+        + `（提示：买入/申购不要再记入金——同一笔钱只在「入金」时算一次外部流入。）`,
+    });
+  }
   if (s.openingCost > 0 && s.netDeposit <= 0) {
     warnings.push({
       code: 'opening_without_deposit',
@@ -115,8 +127,13 @@ function computeAll(userId, accountId) {
     real: s.real,                        // 已实现（含分红、利息）
     unreal: s.unreal,                    // 浮动
     cashIncome: s.cashIncome,
+    /* ── 手续费与融资（v7）── */
+    feeTotal: s.feeTotal,                // 累计手续费（含税，所有类型）
+    marginTotal: s.marginTotal,          // 融资余额合计（欠券商）
+    netValueTotal: s.netValueTotal,      // 实际净值合计 = 持仓市值 − 融资
+    selfCostTotal: s.selfCostTotal,      // 自付本金合计 = 持仓成本 − 融资
     /* ── 诊断 / 出入金页 ── */
-    cash: s.cash,                        // 账户现金余额（可能为负 → 漏记录入金）
+    cash: s.cash,                        // 账户现金余额（融资买入时会为负，属正常）
     netDeposit: s.netDeposit,
     openingCost: s.openingCost,
     netInvest: s.netInvest,

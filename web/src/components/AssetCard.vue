@@ -24,6 +24,16 @@
     <div class="ac-row"><span>已实现</span><b class="num" :class="signClass(h.calc.realCNY)">{{ signedMoney(h.calc.realCNY) }}</b></div>
     <div class="ac-row"><span>浮动盈亏</span><b class="num" :class="signClass(h.calc.unrealCNY)">{{ signedMoney(h.calc.unrealCNY) }}</b></div>
     <div class="ac-row"><span>总收益</span><b class="num" :class="signClass(h.calc.totalCNY)">{{ signedMoney(h.calc.totalCNY) }}</b></div>
+    <div class="ac-row" v-if="h.calc.feeTotalCNY > 0">
+      <span>累计手续费</span><b class="num">¥{{ money(h.calc.feeTotalCNY) }}</b>
+    </div>
+    <div class="ac-row" v-if="h.calc.marginCNY > 0">
+      <span>融资余额</span><b class="num down">¥{{ money(h.calc.marginCNY) }}</b>
+    </div>
+    <div class="ac-row" v-if="h.calc.marginCNY > 0">
+      <span>实际净值 / 自付本金</span>
+      <b class="num">¥{{ money(h.calc.netValueCNY) }} / ¥{{ money(h.calc.selfCostCNY) }}</b>
+    </div>
     <div class="ac-row">
       <span>收益率</span>
       <b class="num" :class="signClass(h.calc.rate)">{{ signedPct(h.calc.rate) }}</b>

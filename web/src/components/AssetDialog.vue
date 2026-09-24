@@ -63,6 +63,27 @@
         </div>
       </el-form-item>
 
+      <template v-if="isBroker">
+        <el-form-item label="融资金额">
+          <el-radio-group v-model="form.marginCurrency" style="margin-right:8px">
+            <el-radio-button label="CNY">CNY</el-radio-button>
+            <el-radio-button label="USD">USD</el-radio-button>
+          </el-radio-group>
+          <el-input-number v-model="form.margin" :min="0" :precision="2" controls-position="right" style="width:150px" />
+        </el-form-item>
+        <el-form-item label=" ">
+          <span class="form-tip" style="line-height:1.6">
+            {{ ccyName(form.marginCurrency) }}；当前该资产已使用的<b>融资额</b>（欠券商的钱，需原样偿还）。
+            留空或 0 表示无融资。后续买入可在流水中分别录入每次使用的融资额。
+          </span>
+        </el-form-item>
+      </template>
+
+      <el-form-item label="汇率" v-if="isBroker && form.marginCurrency === 'USD'">
+        <el-input-number v-model="form.rate" :min="0" :step="0.001" :precision="4" controls-position="right" style="width:180px" />
+        <span class="form-tip" style="margin-left:8px">1 USD = ? CNY，用于把融资金额换算为人民币</span>
+      </el-form-item>
+
       <!-- 期初建仓（仅创建时可填） -->
       <template v-if="!isEdit">
         <el-divider content-position="left">
@@ -117,6 +138,11 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'saved']);
 
 const isEdit = computed(() => !!props.asset);
+/** 仅券商账户支持融资 */
+const isBroker = computed(() => {
+  const acc = store.accounts.find(a => a.id === form.accountId);
+  return acc?.kind === 'broker';
+});
 const isStock = computed(() => form.type === 'stock');
 const saving = ref(false);
 const form = reactive({});
@@ -169,6 +195,8 @@ function reset() {
       valueMode: 'unit',
       unitValue: props.asset.type === 'stock' ? props.asset.price : props.asset.unitPrice,
       totalValue: null,
+      accountId: props.asset.accountId,
+      margin: props.asset.marginCNY || 0, marginCurrency: 'CNY', rate: 7.1,
       openingQty: 0, openingCostPrice: null, openingAmount: null, openingDate: '',
     });
   } else {
@@ -177,6 +205,7 @@ function reset() {
       name: '', code: '', accountId: props.accounts[0]?.id || '', type: 'stock',
       market: 'CN', currency: 'CNY',
       valueMode: 'unit', unitValue: 0, totalValue: null,
+      margin: 0, marginCurrency: 'CNY', rate: 7.1,
       openingQty: 0, openingCostPrice: null, openingAmount: null, openingDate: today,
     });
   }
@@ -219,6 +248,15 @@ async function save() {
       if (!(unit > 0)) return ElMessage.warning(valueHint());
       const payload = { name: form.name, code: form.code };
       if (isStock.value) payload.price = unit; else payload.unitPrice = unit;
+      if (isBroker.value && +form.margin > 0) {
+        payload.margin = +form.margin;
+        payload.marginCurrency = form.marginCurrency;
+        if (form.marginCurrency === 'USD') {
+          const r = +form.fx || 0;
+          if (!(r > 0)) return ElMessage.warning('按 USD 录入融资金额时请填写有效汇率');
+          payload.marginFx = r;
+        }
+      }
       await assetsApi.update(props.asset.id, payload);
       ElMessage.success('已保存');
     } else {
@@ -231,6 +269,15 @@ async function save() {
         price: isStock.value ? effectiveUnit.value : 0,
         unitPrice: isStock.value ? 0 : effectiveUnit.value,
       };
+      if (isBroker.value && +form.margin > 0) {
+        payload.margin = +form.margin;
+        payload.marginCurrency = form.marginCurrency;
+        if (form.marginCurrency === 'USD') {
+          const r = +form.rate || 0;
+          if (!(r > 0)) return ElMessage.warning('按 USD 录入融资金额时请填写有效汇率');
+          payload.marginFx = r;
+        }
+      }
       const opening = buildOpening();
       if (openingQty.value > 0 && !opening) {
         return ElMessage.warning('请填写期初成本单价或期初投入本金');

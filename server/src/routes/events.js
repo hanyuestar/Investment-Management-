@@ -17,6 +17,7 @@ function mapRow(e) {
     id: String(e.id), assetId: String(e.asset_id), date: e.date, kind: e.kind, side: e.side,
     qty: e.qty, price: e.price, amount: e.amount, ratio: e.ratio, fee: e.fee || 0,
     fx: e.fx || 1, isT: e.is_t ? 1 : 0, note: e.note || '', createdAt: e.created_at,
+    marginCNY: e.margin_cny || 0,
   };
 }
 
@@ -29,12 +30,25 @@ function normalize(body, asset) {
   const type = isStock ? String(body.side || body.kind || '') : String(body.kind || '');
   if (!allowed.includes(type)) return { error: `该资产允许的事件类型：${allowed.join(' / ')}` };
 
+  /* 手续费：所有类型均可录，含税；不能为负（可为 0） */
   const fee = Math.max(0, Number(body.fee) || 0);
+  /* 融资额：本次买入使用的融资（CNY，前端按币种与汇率换算后提交）；不能为负 */
+  const marginCNY = Math.max(0, Number(body.marginCNY != null ? body.marginCNY : body.margin) || 0);
+  /* 收益类（分红/利息）录入币种换算：仅这类金额支持 CNY/USD 切换 */
+  const incomeAmount = () => {
+    const raw = Number(body.amount);
+    if (!isFinite(raw) || raw === 0) return { error: '金额需为非 0 数值（收益可为负，用于记录融资利息等支出）' };
+    const rate = (+body.fx > 0) ? +body.fx : (asset.currency === 'USD' ? currentFx(date) : 7.1);
+    const inCur = ['CNY', 'USD'].includes(body.inputCurrency) ? body.inputCurrency : asset.currency;
+    if (inCur === asset.currency) return { amount: raw };
+    if (asset.currency === 'CNY') return { amount: raw * rate };        // 录 USD → CNY
+    return { amount: raw / rate };                                      // 录 CNY → USD
+  };
   let fx = Number(body.fx);
   if (!isFinite(fx) || fx <= 0) fx = asset.currency === 'USD' ? currentFx(date) : 1;
   if (asset.currency === 'CNY') fx = 1;
 
-  const v = { date, fee, fx, note: String(body.note || ''), isT: body.isT ? 1 : 0 };
+  const v = { date, fee, fx, note: String(body.note || ''), isT: body.isT ? 1 : 0, marginCNY: 0 };
   if (isStock) {
     v.kind = type; v.side = type;
     if (type === 'opening') {
@@ -47,10 +61,11 @@ function normalize(body, asset) {
       const qty = Number(body.qty), price = Number(body.price);
       if (!(qty > 0) || !(price > 0)) return { error: '数量与成交价需大于 0' };
       v.qty = qty; v.price = price;
+      v.marginCNY = marginCNY;      // 买入：本次使用的融资额；卖出：忽略（还款由引擎按所得自动计算）
     } else if (type === 'div') {
-      const amount = Number(body.amount);
-      if (!(amount > 0)) return { error: '分红金额需大于 0' };
-      v.amount = amount;
+      const r = incomeAmount();
+      if (r.error) return r;
+      v.amount = r.amount;
     } else if (type === 'bonus') {
       const qty = Number(body.qty);
       if (!(qty > 0)) return { error: '送股数量需大于 0' };
@@ -79,10 +94,11 @@ function normalize(body, asset) {
         else return { error: '请填写单位净值（或金额）' };
       }
       v.qty = qty; v.price = price; v.amount = +(qty * price).toFixed(2);
+      v.marginCNY = marginCNY;      // 申购：本次使用的融资额
     } else {
-      const amount = Number(body.amount);
-      if (!(amount > 0)) return { error: '金额需大于 0' };
-      v.amount = amount;
+      const r = incomeAmount();
+      if (r.error) return r;
+      v.amount = r.amount;          // 利息/理财收益：支持负数（记录融资利息等支出）
     }
   }
   return { value: v };
@@ -105,13 +121,19 @@ router.post('/', asyncHandler(async (req, res) => {
   if (!asset) return badRequest(res, '资产不存在或无权操作');
   const { value, error } = normalize(req.body || {}, asset);
   if (error) return badRequest(res, error);
+  /* 融资仅限券商账户 */
+  if (value.marginCNY > 0) {
+    const acc = getDb().prepare('SELECT kind FROM account WHERE id=? AND user_id=?')
+      .get(asset.account_id, req.user.id);
+    if (!acc || acc.kind !== 'broker') return badRequest(res, '仅券商账户的买入/申购支持录入融资金额');
+  }
 
   const info = getDb().prepare(`INSERT INTO event
-    (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,margin_cny,fx,is_t,note,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     req.user.id, asset.id, value.date, value.kind, value.side,
     value.qty ?? null, value.price ?? null, value.amount ?? null, value.ratio ?? null,
-    value.fee, value.fx, value.isT, value.note, now());
+    value.fee, value.marginCNY || 0, value.fx, value.isT, value.note, now());
   res.status(201).json(mapRow(ownedRow(getDb(), 'event', info.lastInsertRowid, req.user.id)));
 }));
 
@@ -127,10 +149,11 @@ router.put('/:id', asyncHandler(async (req, res) => {
   };
   const { value, error } = normalize(merged, asset);
   if (error) return badRequest(res, error);
-  db.prepare(`UPDATE event SET date=?,kind=?,side=?,qty=?,price=?,amount=?,ratio=?,fee=?,fx=?,is_t=?,note=?
+  db.prepare(`UPDATE event SET date=?,kind=?,side=?,qty=?,price=?,amount=?,ratio=?,fee=?,margin_cny=?,fx=?,is_t=?,note=?
               WHERE id=? AND user_id=?`).run(
     value.date, value.kind, value.side, value.qty ?? null, value.price ?? null,
-    value.amount ?? null, value.ratio ?? null, value.fee, value.fx, value.isT, value.note,
+    value.amount ?? null, value.ratio ?? null, value.fee, value.marginCNY || 0,
+    value.fx, value.isT, value.note,
     row.id, req.user.id);
   res.json(mapRow(ownedRow(db, 'event', row.id, req.user.id)));
 }));

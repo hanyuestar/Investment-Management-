@@ -20,13 +20,13 @@ router.get('/export', (req, res) => {
     settings: (() => { try { return JSON.parse(req.user.settings_json || '{}'); } catch { return {}; } })(),
     fx: db.prepare('SELECT date,rate,source,note FROM fx_rate ORDER BY date').all(),
     accounts: db.prepare('SELECT id,name,kind,currency,note,created_at FROM account WHERE user_id=? ORDER BY id').all(uid),
-    assets: db.prepare(`SELECT id,account_id,name,code,market,type,currency,price,market_value,alerts_json,created_at
+    assets: db.prepare(`SELECT id,account_id,name,code,market,type,currency,price,market_value,unit_price,margin_cny,alerts_json,created_at
                         FROM asset WHERE user_id=? ORDER BY id`).all(uid),
-    events: db.prepare(`SELECT id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at
+    events: db.prepare(`SELECT id,asset_id,date,kind,side,qty,price,amount,ratio,fee,margin_cny,fx,is_t,note,created_at
                         FROM event WHERE user_id=? ORDER BY id`).all(uid),
     snapshots: db.prepare('SELECT month,total FROM snapshot WHERE user_id=? ORDER BY month').all(uid),
     benchmarks: db.prepare('SELECT code,date,value FROM benchmark WHERE user_id=? ORDER BY date').all(uid),
-    cashFlows: db.prepare('SELECT id,account_id,date,kind,amount,fx,note FROM cash_flow WHERE user_id=? ORDER BY id').all(uid),
+    cashFlows: db.prepare('SELECT id,account_id,date,kind,amount,fx,input_currency,input_amount,note FROM cash_flow WHERE user_id=? ORDER BY id').all(uid),
     dcaPlans: db.prepare(`SELECT id,asset_id,start_month,months,day,amount,note,active,created_at
                           FROM dca_plan WHERE user_id=? ORDER BY id`).all(uid),
   };
@@ -79,18 +79,20 @@ router.post('/import', asyncHandler(async (req, res) => {
     for (const a of body.assets) {
       if (!accountIds.has(a.account_id)) continue;
       db.prepare(`INSERT INTO asset
-        (id,user_id,account_id,name,code,market,type,currency,price,market_value,alerts_json,created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        (id,user_id,account_id,name,code,market,type,currency,price,market_value,unit_price,margin_cny,alerts_json,created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
         a.id, uid, a.account_id, a.name, a.code || '', a.market || '', a.type, a.currency,
-        a.price || 0, a.market_value || 0, a.alerts_json || null, a.created_at || now());
+        a.price || 0, a.market_value || 0, a.unit_price || 0, a.margin_cny || 0,
+        a.alerts_json || null, a.created_at || now());
       counts.assets++;
     }
     for (const e of body.events) {
       db.prepare(`INSERT INTO event
-        (id,user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+        (id,user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,margin_cny,fx,is_t,note,created_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
         e.id, uid, e.asset_id, e.date, e.kind, e.side || null, e.qty ?? null, e.price ?? null,
-        e.amount ?? null, e.ratio ?? null, e.fee || 0, e.fx || 1, e.is_t || 0, e.note || '', e.created_at || now());
+        e.amount ?? null, e.ratio ?? null, e.fee || 0, e.margin_cny || 0,
+        e.fx || 1, e.is_t || 0, e.note || '', e.created_at || now());
       counts.events++;
     }
     for (const s of body.snapshots || []) {
@@ -104,8 +106,10 @@ router.post('/import', asyncHandler(async (req, res) => {
     }
     for (const c of body.cashFlows || []) {
       if (!accountIds.has(c.account_id)) continue;
-      db.prepare('INSERT INTO cash_flow (id,user_id,account_id,date,kind,amount,fx,note) VALUES (?,?,?,?,?,?,?,?)')
-        .run(c.id, uid, c.account_id, c.date, c.kind, c.amount, c.fx || 1, c.note || '');
+      db.prepare(`INSERT INTO cash_flow (id,user_id,account_id,date,kind,amount,fx,input_currency,input_amount,note)
+                  VALUES (?,?,?,?,?,?,?,?,?,?)`)
+        .run(c.id, uid, c.account_id, c.date, c.kind, c.amount, c.fx || 1,
+          c.input_currency || null, c.input_amount == null ? c.amount : c.input_amount, c.note || '');
       counts.cashFlows++;
     }
     for (const p of body.dcaPlans || []) {

@@ -92,7 +92,7 @@ import { ref, computed } from 'vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { assetsApi } from '../api';
-import { money, signedMoney, signedPct, pct, signClass, TYPE_LABEL, ACCOUNT_KIND_LABEL } from '../utils/format';
+import { money, signedMoney, signedPct, pct, signClass, TYPE_LABEL, TYPE_COLORS, ACCOUNT_KIND_LABEL } from '../utils/format';
 import AssetCard from '../components/AssetCard.vue';
 import EChart from '../components/EChart.vue';
 import OpsDialogs from '../components/OpsDialogs.vue';
@@ -103,7 +103,6 @@ const ops = ref(null);
 const hasHolding = computed(() => store.holdings.some(h => h.mvCNY > 0));
 const ranking = computed(() => [...store.holdings].sort((a, b) => b.mvCNY - a.mvCNY).slice(0, 10));
 
-const COLORS = { stock: '#e0463e', fund: '#17a2b8', wealth: '#7c52b8', bond: '#e8a93b' };
 const donutOption = computed(() => {
   const agg = {};
   for (const h of store.holdings) {
@@ -111,7 +110,7 @@ const donutOption = computed(() => {
     agg[t] = (agg[t] || 0) + h.mvCNY;
   }
   const data = Object.keys(agg).filter(k => agg[k] > 0).map(k => ({
-    name: TYPE_LABEL[k], value: Math.round(agg[k] * 100) / 100, itemStyle: { color: COLORS[k] },
+    name: TYPE_LABEL[k], value: Math.round(agg[k] * 100) / 100, itemStyle: { color: TYPE_COLORS[k] },
   }));
   return {
     tooltip: { trigger: 'item', formatter: p => `${p.name}<br/>¥${money(p.value)} (${p.percent}%)` },

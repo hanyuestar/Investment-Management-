@@ -377,5 +377,54 @@ const near = (name, got, want, tol = 0.001) => {
   eq('末值类型为 realizable（非 totalAssets）', fl[fl.length - 1].kind === 'realizable' ? 1 : 0, 1, 0.01);
 }
 
+/* =========================================================
+ * 场景22 手续费与融资（v7）
+ * ========================================================= */
+{
+  console.log('\n— 场景22 手续费与融资 —');
+  const mkS = (assets, events) => ({
+    fx: [{ date: '2024-01-01', rate: 7, source: 'manual' }], settings: {},
+    accounts: [{ id: 'A', kind: 'broker', currency: 'CNY' }],
+    assets, events, cashFlows: [], snapshots: [],
+  });
+  const A1 = { id: 'S1', accountId: 'A', name: 'A', type: 'stock', currency: 'CNY', price: 2.5 / 3 * 10 };
+  /* 需求6：买 2 万本金 + 1 万融资 = 3 万成本，现值 2.5 万 → 实际亏损 5 千 */
+  const S = mkS([A1], [{ assetId: 'S1', date: '2024-01-01', kind: 'buy', side: 'buy', qty: 3000, price: 10, fee: 0, fx: 1, marginCNY: 10000 }]);
+  const r = C.calcAsset(A1, S);
+  eq('持仓成本 30000（含融资）', r.costCNY, 30000, 0.01);
+  eq('融资余额 10000', r.marginCNY, 10000, 0.01);
+  eq('实际净值 = 市值 − 融资 = 15000', r.netValueCNY, 15000, 0.01);
+  eq('自付本金 = 成本 − 融资 = 20000', r.selfCostCNY, 20000, 0.01);
+  eq('实际收益 = 实际净值 − 自付本金 = −5000', r.netValueCNY - r.selfCostCNY, -5000, 0.01);
+  eq('引擎总收益同为 −5000', r.totalCNY, -5000, 0.01);
+  /* 需求5：卖出所得优先还融资（还清为止，不多还） */
+  const S2 = mkS([A1], [
+    { assetId: 'S1', date: '2024-01-01', kind: 'buy', side: 'buy', qty: 3000, price: 10, fee: 0, fx: 1, marginCNY: 10000 },
+    { assetId: 'S1', date: '2024-06-01', kind: 'sell', side: 'sell', qty: 1000, price: 12, fee: 0, fx: 1 }]);
+  const r2 = C.calcAsset(A1, S2);
+  eq('卖出 12000 全部用于还款（上限为欠款）', r2.marginRepaidCNY, 10000, 0.01);
+  eq('剩余融资 0', r2.marginCNY, 0, 0.01);
+  /* 需求1：手续费全类型累计（含 USD 按汇率折算） */
+  const F1 = { id: 'F1', accountId: 'A', name: '基金', type: 'fund', currency: 'CNY', unitPrice: 1 };
+  const U1 = { id: 'U1', accountId: 'A', name: '美股', type: 'stock', currency: 'USD', price: 12 };
+  const S3 = mkS([A1, F1, U1], [
+    { assetId: 'S1', date: '2024-01-01', kind: 'buy', side: 'buy', qty: 1000, price: 10, fee: 15, fx: 1 },
+    { assetId: 'S1', date: '2024-02-01', kind: 'sell', side: 'sell', qty: 500, price: 12, fee: 17, fx: 1 },
+    { assetId: 'S1', date: '2024-03-01', kind: 'div', side: 'div', amount: 300, fee: 3, fx: 1 },
+    { assetId: 'F1', date: '2024-01-01', kind: 'invest', side: null, qty: 1000, price: 1, fee: 8, fx: 1 },
+    { assetId: 'F1', date: '2024-04-01', kind: 'redeem', side: null, qty: 200, price: 1.1, fee: 2, fx: 1 },
+    { assetId: 'U1', date: '2024-01-01', kind: 'buy', side: 'buy', qty: 100, price: 10, fee: 5, fx: 7 }]);
+  const s3 = C.summary(S3);
+  eq('股票手续费 15+17+3=35', C.calcAsset(A1, S3).feeTotalCNY, 35, 0.01);
+  eq('基金手续费 8+2=10', C.calcAsset(F1, S3).feeTotalCNY, 10, 0.01);
+  eq('USD 资产手续费 5×7=35', C.calcAsset(U1, S3).feeTotalCNY, 35, 0.01);
+  eq('全局总手续费 80', s3.feeTotal, 80, 0.01);
+  /* 需求7：利息为负（融资利息）计入收益 */
+  const S4 = mkS([F1], [
+    { assetId: 'F1', date: '2024-01-01', kind: 'invest', side: null, qty: 10000, price: 1, fee: 0, fx: 1 },
+    { assetId: 'F1', date: '2024-06-01', kind: 'income', side: null, amount: -500, fee: 0, fx: 1 }]);
+  eq('负数利息计入成本收益（−500）', C.calcAsset(F1, S4).totalCNY, -500, 0.01);
+}
+
 console.log(`\n===== 结果: ${pass} 通过, ${fail} 失败 =====`);
 process.exit(fail ? 1 : 0);

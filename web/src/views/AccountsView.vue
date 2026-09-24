@@ -16,7 +16,7 @@
           <thead>
             <tr>
               <th>账户名称</th><th>类型</th><th>币种</th>
-              <th class="num">市值(CNY)</th><th class="num">已实现</th><th class="num">浮动</th>
+              <th class="num">市值(CNY)</th><th class="num">融资(CNY)</th><th class="num">已实现</th><th class="num">浮动</th>
               <th class="num">总收益</th><th class="num">收益率</th><th>备注</th><th class="col-actions">操作</th>
             </tr>
           </thead>
@@ -26,6 +26,9 @@
               <td><span class="badge badge-gray">{{ kindLabel(a.kind) }}</span></td>
               <td>{{ a.currency }}</td>
               <td class="num">¥{{ money(a.mvCNY) }}</td>
+              <td class="num" :class="a.margin > 0 ? 'down' : ''" :title="a.margin > 0 ? '该账户融资余额（欠券商，需原样偿还）' : ''">
+                {{ a.margin > 0 ? '¥' + money(a.margin) : '—' }}
+              </td>
               <td class="num" :class="signClass(a.real)">{{ signedMoney(a.real) }}</td>
               <td class="num" :class="signClass(a.unreal)">{{ signedMoney(a.unreal) }}</td>
               <td class="num bold" :class="signClass(a.total)">{{ signedMoney(a.total) }}</td>
@@ -37,16 +40,20 @@
                 <el-button size="small" type="danger" plain @click="remove(a)">删除</el-button>
               </td>
             </tr>
-            <tr v-if="!rows.length"><td colspan="10" class="empty">暂无账户，点击右上角新增</td></tr>
+            <tr v-if="!rows.length"><td colspan="11" class="empty">暂无账户，点击右上角新增</td></tr>
           </tbody>
           <tfoot v-if="rows.length">
             <tr style="font-weight:700;background:var(--soft)">
               <td>合计</td><td></td><td></td>
               <td class="num">¥{{ money(total.mv) }}</td>
+              <td class="num" :class="total.margin > 0 ? 'down' : ''">
+                {{ total.margin > 0 ? '¥' + money(total.margin) : '—' }}
+              </td>
               <td class="num" :class="signClass(total.real)">{{ signedMoney(total.real) }}</td>
               <td class="num" :class="signClass(total.unreal)">{{ signedMoney(total.unreal) }}</td>
               <td class="num" :class="signClass(total.total)">{{ signedMoney(total.total) }}</td>
               <td></td><td></td><td></td>
+              <td></td>
             </tr>
           </tfoot>
         </table>
@@ -85,7 +92,8 @@ const rows = computed(() => store.accounts.map(a => {
 }));
 const total = computed(() => rows.value.reduce((s, a) => ({
   mv: s.mv + a.mvCNY, real: s.real + a.real, unreal: s.unreal + a.unreal, total: s.total + a.total,
-}), { mv: 0, real: 0, unreal: 0, total: 0 }));
+  margin: s.margin + (a.margin || 0),
+}), { mv: 0, real: 0, unreal: 0, total: 0, margin: 0 }));
 
 function kindLabel(k) { return ACCOUNT_KIND_LABEL[k] || k; }
 

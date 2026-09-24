@@ -40,6 +40,9 @@ export const usePortfolioStore = defineStore('portfolio', {
     // 引擎返回 {byAccount:[{account,count,mv,invest,profit,rate}], total}
     accountsAgg: (s) => (s.d?.accounts?.byAccount || []).map(r => ({
       ...r.account, count: r.count, mvCNY: r.mv, invest: r.invest, total: r.profit, ret: r.rate,
+      margin: r.margin || 0,            // 融资余额（欠券商）
+      feeTotal: r.feeTotal || 0,        // 累计手续费
+      netDeposit: r.netDeposit || 0,
     })),
     accountsTotal: (s) => s.d?.accounts?.total || null,
     benchmark: (s) => s.d?.benchmark || null,

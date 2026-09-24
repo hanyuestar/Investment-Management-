@@ -5,6 +5,7 @@ const express = require('express');
 const { getDb, now } = require('../db');
 const { authRequired } = require('../middleware/auth');
 const { asyncHandler, badRequest, notFound, ownedRow } = require('../middleware/helpers');
+const { currentFx } = require('../services/fx');
 
 const router = express.Router();
 router.use(authRequired);
@@ -18,6 +19,7 @@ function mapRow(a) {
     id: String(a.id), accountId: String(a.account_id), name: a.name, code: a.code || '',
     market: a.market || '', type: a.type, currency: a.currency,
     price: a.price || 0, marketValue: a.market_value || 0, unitPrice: a.unit_price || 0,
+    marginCNY: a.margin_cny || 0,
     alerts: a.alerts_json ? JSON.parse(a.alerts_json) : null,
     createdAt: a.created_at,
   };
@@ -35,6 +37,22 @@ function validateAlerts(al) {
     out[k] = v;
   }
   return Object.keys(out).length ? out : null;
+}
+
+/**
+ * 解析融资额：支持 CNY/USD 录入，统一换算为 CNY 存储。
+ * 仅券商账户（kind='broker'）允许融资。
+ */
+function parseMargin(body, account, dateStr) {
+  const raw = Number(body.margin != null ? body.margin : body.marginCNY);
+  if (!isFinite(raw) || raw === 0) return 0;
+  if (raw < 0) return '融资金额不能为负';
+  if (account.kind !== 'broker') return '仅券商账户支持融资';
+  const inCur = ['CNY', 'USD'].includes(body.marginCurrency) ? body.marginCurrency : 'CNY';
+  if (inCur === 'CNY') return +raw.toFixed(2);
+  const rate = (+body.marginFx > 0) ? +body.marginFx : currentFx(dateStr || now().slice(0, 10));
+  if (!isFinite(rate) || rate <= 0) return '汇率非法，无法换算融资金额';
+  return +(raw * rate).toFixed(2);      // USD → CNY
 }
 
 /** 解析并校验「期初建仓」输入；返回 {qty, price, amount, date} 或错误字符串 */
@@ -91,13 +109,17 @@ router.post('/', asyncHandler(async (req, res) => {
   if (opening && !isStock && !(unitPrice > 0)) unitPrice = opening.price;
   if (opening && !isStock && !(marketValue > 0)) marketValue = opening.qty * unitPrice;
 
+  const marginCNY = parseMargin(b, account, opening ? opening.date : null);
+  if (typeof marginCNY === 'string') return badRequest(res, marginCNY);
+
   const info = getDb().prepare(`INSERT INTO asset
-    (user_id,account_id,name,code,market,type,currency,price,market_value,unit_price,alerts_json,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`)
+    (user_id,account_id,name,code,market,type,currency,price,market_value,unit_price,margin_cny,alerts_json,created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
     .run(req.user.id, account.id, name, String(b.code || ''), market, type, currency,
       isStock ? price : 0,
       isStock ? 0 : marketValue,
       isStock ? 0 : unitPrice,
+      marginCNY,
       null, now());
 
   if (opening) {
@@ -133,8 +155,16 @@ router.put('/:id', asyncHandler(async (req, res) => {
     alertsJson = result ? JSON.stringify(result) : null;
   }
 
-  getDb().prepare('UPDATE asset SET name=?,code=?,price=?,market_value=?,unit_price=?,alerts_json=? WHERE id=? AND user_id=?')
-    .run(name, code, price, mv, up, alertsJson, row.id, req.user.id);
+  let margin = row.margin_cny || 0;
+  if (b.margin !== undefined || b.marginCNY !== undefined) {
+    const account = ownedRow(getDb(), 'account', row.account_id, req.user.id) || { kind: 'other' };
+    const m = parseMargin(b, account, null);
+    if (typeof m === 'string') return badRequest(res, m);
+    margin = m;
+  }
+
+  getDb().prepare('UPDATE asset SET name=?,code=?,price=?,market_value=?,unit_price=?,margin_cny=?,alerts_json=? WHERE id=? AND user_id=?')
+    .run(name, code, price, mv, up, margin, alertsJson, row.id, req.user.id);
   res.json(mapRow(ownedRow(getDb(), 'asset', row.id, req.user.id)));
 }));
 

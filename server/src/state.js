@@ -63,6 +63,7 @@ function buildState(userId) {
     price: a.price || 0,
     marketValue: a.market_value || 0,
     unitPrice: a.unit_price || 0,
+    marginCNY: a.margin_cny || 0,
     alerts: a.alerts_json ? JSON.parse(a.alerts_json) : null,
   }));
 
@@ -77,6 +78,7 @@ function buildState(userId) {
     amount: e.amount,
     ratio: e.ratio,
     fee: e.fee || 0,
+    marginCNY: e.margin_cny || 0,
     fx: e.fx || 1,
     isT: e.is_t ? 1 : 0,
     note: e.note || '',
@@ -114,13 +116,5 @@ function buildState(userId) {
   };
 }
 
-/** 计算某生效日适用的汇率（date <= 目标日 的最近一条；同日 manual 优先） */
-function fxAt(S, date) {
-  const candidates = (S.fx || []).filter(f => f.date <= date)
-    .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1
-      : (a.source === 'manual' ? 1 : 0) - (b.source === 'manual' ? 1 : 0)));
-  if (candidates.length) return candidates[candidates.length - 1].rate;
-  return Calc.currentFx(S);
-}
 
-module.exports = { buildState, getUserSettings, saveUserSettings, getUser, fxAt, DEFAULT_SETTINGS };
+module.exports = { buildState, getUserSettings, saveUserSettings, getUser, DEFAULT_SETTINGS };

@@ -19,12 +19,7 @@
         border:1px solid #e6c78a;color:#a06a10;font-size:12px;white-space:nowrap"
         @click="store.dismissWarning(w.code)">不再提示</button>
     </div>
-    <div v-if="cash.cash < -0.01" style="margin:0 0 12px;padding:10px 14px;border-radius:8px;
-      background:#fef0f0;border:1px solid #fde2e2;color:#c45656;font-size:13px;line-height:1.7">
-      ⚠️ <b>账户现金为 {{ money(cash.cash) }}</b>：登记的入金不足以覆盖买入/申购支出，
-      说明有<b>漏记的入金</b>。请补录，否则「总资产」会偏低。
-      提示：买入/申购<b>不要</b>再记入金——同一笔钱只在「入金」时算一次外部流入。
-    </div>
+    
 
     <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
       <div class="kpi"><div class="label">累计入金 (CNY)</div><div class="val num up">¥{{ money(cash.deposit) }}</div></div>
