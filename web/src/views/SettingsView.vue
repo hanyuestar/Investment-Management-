@@ -57,10 +57,19 @@
             <tr><td><b>送股</b></td><td>股数增加、成本总额不变、均价摊薄</td></tr>
             <tr><td><b>拆分/合股</b></td><td>按比例调整股数与成本价，成本总额不变</td></tr>
             <tr><td><b>多币种</b></td><td>每笔流水锁定当日汇率用于成本；市值按当前汇率折算；历史成本不随后续汇率变化</td></tr>
-            <tr><td><b>出入金</b></td><td>本金搬运本身不产生盈亏；计入账户现金与累计投入，并作为 XIRR 的外部现金流</td></tr>
+            <tr><td><b>累计投入</b></td><td>= 净入金（入金 − 出金）；出金即下降</td></tr>
+            <tr><td><b>累计收益</b></td><td>= 已实现 + 分红 + 利息 + 浮动（唯一口径，不再分账户/持仓）</td></tr>
+            <tr><td><b>总资产</b></td><td>= 累计投入 + 累计收益</td></tr>
+            <tr><td><b>出入金</b></td><td>本金搬运本身不产生盈亏；构成「累计投入」，并作为 XIRR 的外部现金流。仅记<b>外部资金进出</b>，买入/申购属账户内部转移，勿重复登记</td></tr>
             <tr><td><b>XIRR</b></td><td>资金加权年化，考虑每笔投入时点；TWR 为时间加权，剔除出入金影响</td></tr>
           </tbody>
         </table>
+        <div v-if="store.dismissedWarnings.length" style="margin-top:10px;display:flex;align-items:center;gap:10px">
+          <span class="sub" style="margin:0">
+            已忽略 {{ store.dismissedWarnings.length }} 条数据一致性提示
+          </span>
+          <el-button size="small" @click="store.restoreWarnings()">恢复已忽略的提示</el-button>
+        </div>
       </div>
     </div>
   </div>

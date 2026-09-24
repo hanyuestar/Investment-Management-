@@ -12,8 +12,12 @@
     </div>
 
     <div v-for="w in store.warnings" :key="w.code" style="margin:0 0 12px;padding:10px 14px;border-radius:8px;
-      background:#fdf6ec;border:1px solid #faecd8;color:#b88230;font-size:13px;line-height:1.75">
-      ⚠️ <b>{{ w.title }}</b> —— {{ w.msg }}
+      background:#fdf6ec;border:1px solid #faecd8;color:#b88230;font-size:13px;line-height:1.75;
+      display:flex;gap:10px;align-items:flex-start">
+      <div style="flex:1;min-width:0">⚠️ <b>{{ w.title }}</b> —— {{ w.msg }}</div>
+      <button style="flex:none;padding:2px 8px;border-radius:4px;cursor:pointer;background:transparent;
+        border:1px solid #e6c78a;color:#a06a10;font-size:12px;white-space:nowrap"
+        @click="store.dismissWarning(w.code)">不再提示</button>
     </div>
     <div v-if="cash.cash < -0.01" style="margin:0 0 12px;padding:10px 14px;border-radius:8px;
       background:#fef0f0;border:1px solid #fde2e2;color:#c45656;font-size:13px;line-height:1.7">

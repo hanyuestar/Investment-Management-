@@ -41,8 +41,9 @@
 
   <!-- 数据一致性告警（如：期初建仓本金与入金重复统计） -->
   <div v-if="warnings.length" class="dup-warn">
-    <div v-for="w in warnings" :key="w.code">
-      ⚠️ <b>{{ w.title }}</b> —— {{ w.msg }}
+    <div v-for="w in warnings" :key="w.code" class="dup-item">
+      <div class="dup-msg">⚠️ <b>{{ w.title }}</b> —— {{ w.msg }}</div>
+      <button class="dup-dismiss" @click="store.dismissWarning(w.code)">不再提示</button>
     </div>
   </div>
 </template>
@@ -76,6 +77,14 @@ watch(pulse, () => {
   line-height: 1.75;
 }
 .dup-warn b { color: #a06a10; }
+.dup-item { display: flex; gap: 10px; align-items: flex-start; }
+.dup-msg { flex: 1; min-width: 0; }
+.dup-dismiss {
+  flex: none; margin-top: 1px; padding: 2px 8px; border-radius: 4px; cursor: pointer;
+  background: transparent; border: 1px solid #e6c78a; color: #a06a10;
+  font-size: 12px; line-height: 1.5; white-space: nowrap;
+}
+.dup-dismiss:hover { background: #f7ecd8; }
 @media (max-width: 768px) {
   .dup-warn { font-size: 12px; line-height: 1.7; padding: 9px 12px; }
 }

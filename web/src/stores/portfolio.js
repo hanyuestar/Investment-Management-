@@ -7,6 +7,10 @@ import { computeApi } from '../api';
  */
 export const usePortfolioStore = defineStore('portfolio', {
   state: () => ({
+    /** 已忽略的一致性告警 code（localStorage 持久化，用户可随时恢复） */
+    dismissedWarnings: (() => {
+      try { return JSON.parse(localStorage.getItem('im_dismissed_warnings') || '[]'); } catch { return []; }
+    })(),
     raw: {
       settings: null,
       fx: [],
@@ -27,7 +31,10 @@ export const usePortfolioStore = defineStore('portfolio', {
   getters: {
     ready: (s) => !!s.d,
     kpis: (s) => s.d?.kpis || {},
-    warnings: (s) => s.d?.warnings || [],
+    /** 全部一致性告警（含已忽略） */
+    allWarnings: (s) => s.d?.warnings || [],
+    /** 需展示的告警（已忽略的不显示） */
+    warnings: (s) => (s.d?.warnings || []).filter(w => !s.dismissedWarnings.includes(w.code)),
     // 引擎返回 {asset, calc:{...}, mvCNY, profitCNY}，这里把 calc 摊平，便于组件直接取 h.qty / h.avgLocal 等
     holdings: (s) => (s.d?.holdings || []).map(h => ({ ...h, ...(h.calc || {}) })),
     // 引擎返回 {byAccount:[{account,count,mv,invest,profit,rate}], total}
@@ -60,6 +67,17 @@ export const usePortfolioStore = defineStore('portfolio', {
     eventsOfAsset: (s) => (id) => s.raw.events.filter(e => e.assetId === String(id)),
   },
   actions: {
+    /** 忽略某条告警（持久化） */
+    dismissWarning(code) {
+      if (!code || this.dismissedWarnings.includes(code)) return;
+      this.dismissedWarnings.push(code);
+      try { localStorage.setItem('im_dismissed_warnings', JSON.stringify(this.dismissedWarnings)); } catch { /* 忽略 */ }
+    },
+    /** 恢复全部已忽略的告警 */
+    restoreWarnings() {
+      this.dismissedWarnings = [];
+      try { localStorage.removeItem('im_dismissed_warnings'); } catch { /* 忽略 */ }
+    },
     setAccount(id) {
       this.selectedAccount = id || '';
       return this.refreshCompute();
