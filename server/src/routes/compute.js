@@ -20,7 +20,7 @@ router.get('/compute', (req, res) => {
 router.get('/summary', (req, res) => {
   const d = portfolio.computeAll(req.user.id, req.query.accountId);
   res.json({
-    kpis: d.kpis, holdings: d.holdings, accounts: d.accounts, aggregation: d.aggregation, cash: d.cash,
+    kpis: d.kpis, warnings: d.warnings || [], holdings: d.holdings, accounts: d.accounts, aggregation: d.aggregation, cash: d.cash,
   });
 });
 

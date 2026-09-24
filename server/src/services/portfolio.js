@@ -62,6 +62,32 @@ function computeAll(userId, accountId) {
 
   const holdings = s.rows.map(({ a, r, mv, profit }) => ({ asset: a, calc: r, mvCNY: mv, profitCNY: profit }));
 
+  /* ---------- 数据一致性检测 ----------
+   * 「期初建仓本金」与「入金」是本金来源的两种**互斥**表达：
+   *   · 期初建仓 = 这笔钱在**开始记账前**就已投入（系统外）
+   *   · 入金     = 这笔钱在**记账期内**转入账户（系统内）
+   * 若两者同时存在且金额接近，极可能是同一笔钱被记了两次：
+   *   总资产 会因「假现金」虚增，累计投入 也会双倍计数。
+   * 这里只做**提示**（不自动改数），并给出两条修正路径。
+   */
+  const warnings = [];
+  if (s.openingCost > 0 && s.netDeposit > 0) {
+    const dup = round2(Math.min(s.openingCost, s.netDeposit));
+    warnings.push({
+      code: 'duplicate_opening_deposit',
+      level: 'warn',
+      title: '可能重复统计了本金',
+      openingCost: s.openingCost,
+      netDeposit: s.netDeposit,
+      mightDup: dup,
+      msg: `同时存在「期初建仓本金 ¥${s.openingCost}」与「净入金 ¥${s.netDeposit}」。`
+        + `若这笔入金就是当初买这些期初持仓的钱，则同一笔本金被算了两遍——`
+        + `总资产与累计投入会各虚增约 ¥${dup}（现金会出现并不存在的余额）。`
+        + `请二选一修正：① 删除该笔「入金」记录（期初建仓已含本金）；`
+        + `② 或把「期初建仓」改为「买入/申购」事件（保留入金，账实更清晰）。`,
+    });
+  }
+
   const kpis = {
     /* ── 账户口径（回答「我到底赚了多少」）── */
     totalAssets: s.totalAssets,          // 总资产 = 持仓市值 + 现金
@@ -95,6 +121,7 @@ function computeAll(userId, accountId) {
 
   return {
     kpis,
+    warnings,
     settings,
     holdings,
     accounts,

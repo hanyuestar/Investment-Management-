@@ -27,6 +27,7 @@ export const usePortfolioStore = defineStore('portfolio', {
   getters: {
     ready: (s) => !!s.d,
     kpis: (s) => s.d?.kpis || {},
+    warnings: (s) => s.d?.warnings || [],
     // 引擎返回 {asset, calc:{...}, mvCNY, profitCNY}，这里把 calc 摊平，便于组件直接取 h.qty / h.avgLocal 等
     holdings: (s) => (s.d?.holdings || []).map(h => ({ ...h, ...(h.calc || {}) })),
     // 引擎返回 {byAccount:[{account,count,mv,invest,profit,rate}], total}

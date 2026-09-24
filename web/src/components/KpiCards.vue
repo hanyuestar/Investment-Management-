@@ -48,6 +48,13 @@
       <div class="sub num muted">汇率 1 USD = {{ Number(k.fxCurrent || 7.1).toFixed(4) }}</div>
     </div>
   </div>
+
+  <!-- 数据一致性告警（如：期初建仓本金与入金重复统计） -->
+  <div v-if="warnings.length" class="dup-warn">
+    <div v-for="w in warnings" :key="w.code">
+      ⚠️ <b>{{ w.title }}</b> —— {{ w.msg }}
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -57,7 +64,7 @@ import { usePortfolioStore } from '../stores/portfolio';
 import { money, signedMoney, signedPct, signClass } from '../utils/format';
 
 const store = usePortfolioStore();
-const { kpis: k, pulse } = storeToRefs(store);
+const { kpis: k, warnings, pulse } = storeToRefs(store);
 const flashing = ref(false);
 let timer = null;
 watch(pulse, () => {
@@ -66,3 +73,17 @@ watch(pulse, () => {
   timer = setTimeout(() => { flashing.value = false; }, 1100);
 });
 </script>
+
+<style scoped>
+.dup-warn {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #fdf6ec;
+  border: 1px solid #faecd8;
+  color: #b88230;
+  font-size: 13px;
+  line-height: 1.75;
+}
+.dup-warn b { color: #a06a10; }
+</style>

@@ -11,6 +11,10 @@
       </div>
     </div>
 
+    <div v-for="w in store.warnings" :key="w.code" style="margin:0 0 12px;padding:10px 14px;border-radius:8px;
+      background:#fdf6ec;border:1px solid #faecd8;color:#b88230;font-size:13px;line-height:1.75">
+      ⚠️ <b>{{ w.title }}</b> —— {{ w.msg }}
+    </div>
     <div v-if="cash.cash < -0.01" style="margin:0 0 12px;padding:10px 14px;border-radius:8px;
       background:#fef0f0;border:1px solid #fde2e2;color:#c45656;font-size:13px;line-height:1.7">
       ⚠️ <b>账户现金为 {{ money(cash.cash) }}</b>：登记的入金不足以覆盖买入/申购支出，
