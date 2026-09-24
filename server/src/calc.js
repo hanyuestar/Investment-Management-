@@ -287,32 +287,33 @@
         netInvest += r.netInvestCNY;
       });
       const cf = accountCash(S, { accountId: acc.id });
-      const totalAssets = round2(mv + cf.cash);
-      const profitAccount = round2(totalAssets - cf.effectiveInvest);
+      const profit = round2(profitInvest);          // 累计收益（单一，= 已实现+分红+利息+浮动）
+      const invest = cf.netDeposit;                 // 累计投入 = 净入金
+      const totalAssets = round2(invest + profit);  // 总资产 = 累计投入 + 累计收益
       return {
         account: acc, count: assets.length,
         mv: round2(mv), cash: cf.cash, totalAssets,
         netDeposit: cf.netDeposit, openingCost: cf.openingCost, effectiveInvest: cf.effectiveInvest,
         netInvest: round2(netInvest),
-        profit: profitInvest, profitInvest: round2(profitInvest), profitAccount,
-        invest: cf.effectiveInvest,                       // 兼容旧字段名：累计投入 = 有效净投入
-        rate: netInvest > 0 ? profitInvest / netInvest : 0,   // 持仓口径收益率
-        accountRate: cf.effectiveInvest > 0 ? profitAccount / cf.effectiveInvest : 0
+        profit, profitInvest: profit, profitAccount: profit,   // 兼容别名
+        invest,
+        rate: invest > 0 ? profit / invest : 0,
+        accountRate: invest > 0 ? profit / invest : 0
       };
     });
     const all = out.reduce((s, x) => ({
       mv: s.mv + x.mv, cash: s.cash + x.cash, totalAssets: s.totalAssets + x.totalAssets,
-      effectiveInvest: s.effectiveInvest + x.effectiveInvest, netInvest: s.netInvest + x.netInvest,
-      profitInvest: s.profitInvest + x.profitInvest, profitAccount: s.profitAccount + x.profitAccount
-    }), { mv: 0, cash: 0, totalAssets: 0, effectiveInvest: 0, netInvest: 0, profitInvest: 0, profitAccount: 0 });
+      invest: s.invest + x.invest, netInvest: s.netInvest + x.netInvest,
+      profit: s.profit + x.profit
+    }), { mv: 0, cash: 0, totalAssets: 0, invest: 0, netInvest: 0, profit: 0 });
     return {
       byAccount: out,
       total: {
         mv: round2(all.mv), cash: round2(all.cash), totalAssets: round2(all.totalAssets),
-        invest: round2(all.effectiveInvest), netInvest: round2(all.netInvest),
-        profit: round2(all.profitInvest), profitInvest: round2(all.profitInvest), profitAccount: round2(all.profitAccount),
-        rate: all.netInvest > 0 ? all.profitInvest / all.netInvest : 0,
-        accountRate: all.effectiveInvest > 0 ? all.profitAccount / all.effectiveInvest : 0
+        invest: round2(all.invest), netInvest: round2(all.netInvest),
+        profit: round2(all.profit), profitInvest: round2(all.profit), profitAccount: round2(all.profit),
+        rate: all.invest > 0 ? all.profit / all.invest : 0,
+        accountRate: all.invest > 0 ? all.profit / all.invest : 0
       }
     };
   }
@@ -356,26 +357,31 @@
       return { a, r, mv: r.mvCNY || 0, profit: assetTotal(r) };
     });
     const cf = accountCash(S, opts);
-    const totalAssets = round2(mv + cf.cash);
-    const profitInvest = round2(real + unreal);      // 持仓口径 = 已实现 + 浮动
-    const profitAccount = round2(totalAssets - cf.effectiveInvest);
+    /* v6 单一口径（用户定义）：
+     *   累计投入 = 净入金（入金 − 出金）        —— 期初建仓本金**不计入**
+     *   累计收益 = 已实现 + 分红 + 利息 + 浮动  —— 唯一口径，不再区分「账户/持仓」
+     *   总资产   = 累计投入 + 累计收益
+     */
+    const profit = round2(real + unreal);
+    const invest = cf.netDeposit;
+    const totalAssets = round2(invest + profit);
     return {
-      /* 持仓口径 */
+      /* 持仓构成 */
       total: round2(mv),                    // 兼容旧字段名（= 持仓市值）
       mv: round2(mv),
       real: round2(real), unreal: round2(unreal), cashIncome: round2(cashIncome),
-      profit: profitInvest,                 // 兼容旧字段名（= 持仓口径累计收益）
-      profitInvest,
-      netInvest: round2(netInvest),         // 证券净投入（可增可减）
-      buyTotal: round2(buyTotal),           // 累计买入/申购（仅展示，不含期初建仓）
-      rate: netInvest > 0 ? profitInvest / netInvest : 0,   // 持仓口径收益率
-      /* 账户口径 */
-      cash: cf.cash, totalAssets,
+      /* 单一口径三件套 */
+      invest,                               // 累计投入 = 净入金
+      profit,                               // 累计收益（唯一口径）
+      totalAssets,                          // 总资产 = 累计投入 + 累计收益
+      rate: invest > 0 ? profit / invest : 0,
+      /* 兼容别名（v5 双口径字段，现均指向同一值） */
+      profitInvest: profit, profitAccount: profit, accountRate: invest > 0 ? profit / invest : 0,
+      /* 诊断用（管理页/告警） */
       netDeposit: cf.netDeposit, openingCost: cf.openingCost, effectiveInvest: cf.effectiveInvest,
-      profitAccount,
-      accountRate: cf.effectiveInvest > 0 ? profitAccount / cf.effectiveInvest : 0,
-      /* 兼容旧字段名：累计投入 → 有效净投入 */
-      invest: cf.effectiveInvest,
+      netInvest: round2(netInvest),         // 证券净投入（可增可减）
+      buyTotal: round2(buyTotal),           // 累计买入/申购（仅展示）
+      cash: cf.cash,
       rows
     };
   }

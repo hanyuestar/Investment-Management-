@@ -76,39 +76,47 @@ function computeAll(userId, accountId) {
     warnings.push({
       code: 'duplicate_opening_deposit',
       level: 'warn',
-      title: '可能重复统计了本金',
+      title: '期初建仓与入金可能是同一笔钱',
       openingCost: s.openingCost,
       netDeposit: s.netDeposit,
       mightDup: dup,
       msg: `同时存在「期初建仓本金 ¥${s.openingCost}」与「净入金 ¥${s.netDeposit}」。`
-        + `若这笔入金就是当初买这些期初持仓的钱，则同一笔本金被算了两遍——`
-        + `总资产与累计投入会各虚增约 ¥${dup}（现金会出现并不存在的余额）。`
-        + `请二选一修正：① 删除该笔「入金」记录（期初建仓已含本金）；`
-        + `② 或把「期初建仓」改为「买入/申购」事件（保留入金，账实更清晰）。`,
+        + `累计投入只按净入金计（不受影响），但**账户现金**会出现并不存在的余额`
+        + `（约 ¥${dup}，这笔钱其实已变成持仓）。若确认是同一笔钱，`
+        + `删除那笔「入金」记录即可让现金也准确；若入金是另外新转入的钱，请忽略本提示。`,
+    });
+  }
+  if (s.openingCost > 0 && s.netDeposit <= 0) {
+    warnings.push({
+      code: 'opening_without_deposit',
+      level: 'warn',
+      title: '期初建仓缺少对应入金',
+      openingCost: s.openingCost,
+      msg: `检测到期初建仓本金 ¥${s.openingCost}，但没有对应入金记录。`
+        + `按当前口径「累计投入 = 净入金」，这笔本金**未计入累计投入**，`
+        + `因此「总资产」会比实际少算约 ¥${s.openingCost}。`
+        + `请到「出入金」页补录一笔等额入金（若这笔钱是记账前就投入的，也需补录以体现本金）。`,
     });
   }
 
   const kpis = {
-    /* ── 账户口径（回答「我到底赚了多少」）── */
-    totalAssets: s.totalAssets,          // 总资产 = 持仓市值 + 现金
-    cash: s.cash,                        // 账户现金余额
-    invest: s.invest,                    // 累计投入本金 = 净入金 + 期初建仓本金（可增可减）
-    netDeposit: s.netDeposit,            // 净入金 = 入金 − 出金
-    openingCost: s.openingCost,          // 期初建仓本金
-    profitAccount: s.profitAccount,      // 账户口径累计收益 = 总资产 − 累计投入本金
-    accountRate: s.accountRate,          // 账户口径收益率
-    /* ── 持仓口径（衡量投资能力，与 XIRR/TWR 同源）── */
-    total: s.total,                      // 持仓市值（兼容旧字段名）
-    profit: s.profitInvest,              // 持仓口径累计收益（兼容旧字段名）
-    profitInvest: s.profitInvest,
-    real: s.real,
-    unreal: s.unreal,
+    /* ── 单一口径三件套（v6）── */
+    totalAssets: s.totalAssets,          // 总资产 = 累计投入 + 累计收益
+    invest: s.invest,                    // 累计投入 = 净入金（入金 − 出金）
+    profit: s.profit,                    // 累计收益（唯一口径，不再分账户/持仓）
+    rate: s.rate,                        // 收益率 = 累计收益 / 累计投入
+    /* ── 持仓构成（用于卡片副标题）── */
+    mv: s.mv,
+    real: s.real,                        // 已实现（含分红、利息）
+    unreal: s.unreal,                    // 浮动
     cashIncome: s.cashIncome,
-    netInvest: s.netInvest,              // 证券净投入（可增可减）
-    buyTotal: s.buyTotal,                // 累计买入/申购（仅展示）
+    /* ── 诊断 / 出入金页 ── */
+    cash: s.cash,                        // 账户现金余额（可能为负 → 漏记录入金）
+    netDeposit: s.netDeposit,
+    openingCost: s.openingCost,
+    netInvest: s.netInvest,
+    buyTotal: s.buyTotal,
     /* ── 绩效 ── */
-    simpleRate: s.accountRate,           // 与「累计投入本金」配对
-    investRate: s.rate,                  // 持仓口径收益率（分母 = 证券净投入）
     xirr: pct(xirr),
     holdingDays: days,
     twr: pct(twr),
@@ -128,12 +136,11 @@ function computeAll(userId, accountId) {
     aggregation,
     performance: {
       xirr: pct(xirr), twr: pct(twr), simpleAnnualized: pct(simpleAnn),
-      cumulativeRate: s.accountRate, holdingDays: days,
-      real: s.real, unreal: s.unreal,
-      profit: s.profitInvest, profitInvest: s.profitInvest, profitAccount: s.profitAccount,
-      invest: s.invest, netDeposit: s.netDeposit, openingCost: s.openingCost,
+      cumulativeRate: s.rate, holdingDays: days,
+      totalAssets: s.totalAssets, invest: s.invest, profit: s.profit,
+      real: s.real, unreal: s.unreal, mv: s.mv, cash: s.cash,
+      netDeposit: s.netDeposit, openingCost: s.openingCost,
       netInvest: s.netInvest, buyTotal: s.buyTotal,
-      totalAssets: s.totalAssets, mv: s.total, cash: s.cash,
     },
     benchmark: bm,
     allocation: alloc,

@@ -122,7 +122,7 @@ const cashOption = computed(() => {
       itemStyle: { color: f.kind === 'deposit' ? '#2b6cb0' : '#9aa6b2' },
     };
   });
-  const total = store.kpis.total || 0;
+  const total = store.kpis.mv || 0;
   if (total) {
     points.push({ date: '当前', value: total, itemStyle: { color: '#e0463e' } });
   }

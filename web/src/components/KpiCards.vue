@@ -3,29 +3,19 @@
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">总资产 (CNY)</div>
       <div class="val num">¥{{ money(k.totalAssets) }}</div>
-      <div class="sub num muted">
-        持仓 {{ money(k.total) }} ｜ 现金 {{ money(k.cash) }}
-      </div>
+      <div class="sub num muted">累计投入 {{ money(k.invest) }} + 累计收益 {{ signedMoney(k.profit) }}</div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">累计投入 (CNY)</div>
       <div class="val num">¥{{ money(k.invest) }}</div>
-      <div class="sub num muted">
-        净入金 {{ money(k.netDeposit) }}<template v-if="k.openingCost"> ｜ 期初本金 {{ money(k.openingCost) }}</template>
-      </div>
+      <div class="sub num muted">净入金（入金 − 出金）</div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
-      <div class="label">累计收益·账户口径</div>
-      <div class="val num" :class="signClass(k.profitAccount)">{{ signedMoney(k.profitAccount) }}</div>
-      <div class="sub num" :class="signClass(k.accountRate)">总资产 − 累计投入 ｜ {{ signedPct(k.accountRate) }}</div>
-    </div>
-    <div class="kpi" :class="{ flash: flashing }">
-      <div class="label">累计收益·持仓口径</div>
-      <div class="val num" style="font-size:15px;line-height:1.5">
-        <div :class="signClass(k.real)">{{ signedMoney(k.real) }}</div>
-        <div :class="signClass(k.unreal)">{{ signedMoney(k.unreal) }}</div>
+      <div class="label">累计收益 (CNY)</div>
+      <div class="val num" :class="signClass(k.profit)">{{ signedMoney(k.profit) }}</div>
+      <div class="sub num" :class="signClass(k.rate)">
+        收益率 {{ signedPct(k.rate) }} ｜ 已实现 {{ signedMoney(k.real) }} · 浮动 {{ signedMoney(k.unreal) }}
       </div>
-      <div class="sub num" :class="signClass(k.investRate)">已实现 / 浮动 ｜ {{ signedPct(k.investRate) }}</div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">XIRR 年化</div>
@@ -86,4 +76,7 @@ watch(pulse, () => {
   line-height: 1.75;
 }
 .dup-warn b { color: #a06a10; }
+@media (max-width: 768px) {
+  .dup-warn { font-size: 12px; line-height: 1.7; padding: 9px 12px; }
+}
 </style>

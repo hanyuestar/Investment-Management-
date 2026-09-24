@@ -106,7 +106,7 @@ async function delBench(row) {
 }
 
 function fillCurrent() {
-  snap.total = Math.round((store.kpis.total || 0) * 100) / 100;
+  snap.total = Math.round((store.kpis.mv || 0) * 100) / 100;
 }
 async function saveSnap() {
   if (!snap.month || !(snap.total >= 0)) return ElMessage.warning('请选择月份并填写月末持仓市值');

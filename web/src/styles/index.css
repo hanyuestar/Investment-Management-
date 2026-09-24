@@ -127,7 +127,7 @@ body {
 /* ---------- KPI ---------- */
 .kpi-row {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(7, 1fr);   /* 7 张：总资产/累计投入/累计收益/XIRR/TWR/α/本年收益 */
   gap: 10px;
   margin-bottom: 14px;
 }

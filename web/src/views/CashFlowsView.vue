@@ -3,7 +3,7 @@
     <div class="page-head">
       <div>
         <h2>出入金</h2>
-        <div class="sub">本金搬运本身不产生盈亏；但计入账户现金与累计投入，并作为 XIRR 的外部现金流</div>
+        <div class="sub">累计投入 = 净入金（入金 − 出金）；出入金同时作为 XIRR 的外部现金流</div>
         <div class="sub" style="margin-top:2px">此处只记录<b>外部资金进出账户</b>。用账户里的钱买股票/基金属于<b>账户内部转移</b>，请勿重复登记入金（否则现金与总资产会虚增）。</div>
       </div>
       <div class="actions">
@@ -26,7 +26,7 @@
       <div class="kpi"><div class="label">累计入金 (CNY)</div><div class="val num up">¥{{ money(cash.deposit) }}</div></div>
       <div class="kpi"><div class="label">累计出金 (CNY)</div><div class="val num down">¥{{ money(cash.withdraw) }}</div></div>
       <div class="kpi"><div class="label">净入金 (CNY)</div><div class="val num">¥{{ money(cash.net) }}</div>
-        <div class="sub num muted">= 累计投入（本金口径）</div></div>
+        <div class="sub num muted">= 累计投入</div></div>
       <div class="kpi"><div class="label">账户现金 (CNY)</div>
         <div class="val num" :class="cash.cash < 0 ? 'down' : ''">¥{{ money(cash.cash) }}</div>
         <div class="sub num muted">入金 − 出金 − 买入 − 申购 + 卖出 + 赎回 + 分红/利息</div></div>

@@ -136,7 +136,7 @@ function barPct(mv, i) {
   return Math.max(0, Math.min(100, (mv / max) * 100));
 }
 function shareOf(mv) {
-  const total = Number(store.kpis.total) || 0;
+  const total = Number(store.kpis.mv) || 0;
   return total > 0 ? mv / total : 0;
 }
 
