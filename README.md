@@ -205,9 +205,6 @@ docker compose up -d --build
 | [07 备份与导入导出](https://github.com/hanyuestar/Investment-Management-/wiki/07-备份与导入导出) | JSON 备份格式、自动备份策略、迁移与恢复 |
 | [08 FAQ](https://github.com/hanyuestar/Investment-Management-/wiki/08-FAQ) | 常见问题与排查 |
 | [09 开发与测试](https://github.com/hanyuestar/Investment-Management-/wiki/09-开发与测试) | 代码约定、测试如何运行、演示数据验收数字 |
-| [10 交叉验证报告](https://github.com/hanyuestar/Investment-Management-/wiki/10-交叉验证报告) | 本版本的测试范围、结果、已知限制与修复清单 |
-| [11 交叉验证与移动端适配报告](https://github.com/hanyuestar/Investment-Management-/wiki/11-交叉验证与移动端适配报告) | 独立复核发现的 8 项缺陷与修复、文档契约不一致、移动端响应式方案与真机验证证据 |
-| [交叉验证上下文包](https://github.com/hanyuestar/Investment-Management-/wiki/HANDOFF-交叉验证上下文包) | 交给其他模型 / 审阅者复核用的完整上下文 |
 
 ---
 
@@ -218,9 +215,9 @@ cd server
 npm test                   # = calc.test.js（16 场景 49 断言）+ node --test test/api.test.js（39 用例）
 ```
 
-当前结果：**calc 49/49 通过，API 39/39 通过**。前端无单元测试，验收方式为 `npm run build` 通过 + 浏览器逐页走查（记录见 [10 交叉验证报告](https://github.com/hanyuestar/Investment-Management-/wiki/10-交叉验证报告)）。
+当前结果：**calc 78/78 通过，API 39/39 通过**。前端无单元测试，验收方式为 `npm run build` 通过 + 浏览器逐页走查。
 
-**移动端适配**：全站已做响应式（≤768px 单列堆叠 + 抽屉导航 + 触控友好尺寸，PC 布局与功能逻辑不变）。真机复核以 Chromium + CDP 完成 **4 视口 × 15 路由 = 60 组合**自动化：横向溢出 0、JS 报错 0、控制台 error 0。详见 [11 交叉验证与移动端适配报告](https://github.com/hanyuestar/Investment-Management-/wiki/11-交叉验证与移动端适配报告)。
+**移动端适配**：全站已做响应式（≤768px 单列堆叠 + 抽屉导航 + 触控友好尺寸，PC 布局与功能逻辑不变）。真机复核以 Chromium + CDP 完成 **4 视口 × 15 路由 = 60 组合**自动化：横向溢出 0、JS 报错 0、控制台 error 0。
 
 演示数据的关键验收数字（汇率 6.6954）：
 
@@ -235,9 +232,9 @@ npm test                   # = calc.test.js（16 场景 49 断言）+ node --tes
 ## 八、已知限制
 
 1. **Docker 镜像已通过 GitHub Actions 多架构（linux/amd64 + arm64）构建并发布**，但**未在本机以容器方式实跑**（本机无 Docker 环境）——容器编排/健康检查行为建议自行冒烟一次。
-2. 前端无单元测试，靠构建 + 浏览器走查验收；响应式部分已补 CDP 真机自动化（4 视口 × 15 路由），仍**未在 iOS Safari / Android Chrome 真机实测**，触摸手势与软键盘行为未覆盖（详见 [11 报告](https://github.com/hanyuestar/Investment-Management-/wiki/11-交叉验证与移动端适配报告) §八）。
+2. 前端无单元测试，靠构建 + 浏览器走查验收；响应式部分已补 CDP 真机自动化（4 视口 × 15 路由），仍**未在 iOS Safari / Android Chrome 真机实测**，触摸手势与软键盘行为未覆盖。
 3. 行情价格不做自动抓取：股票现价、非股票持仓市值需手工维护（数据页/持仓卡片编辑）。
-4. 税务模块为辅助估算，不覆盖所有减免情形，不构成申报依据。**注意：资本利得按移动加权平均口径计算，不随「成本核算方法」的 FIFO 设置变化**，详见 [11 报告](https://github.com/hanyuestar/Investment-Management-/wiki/11-交叉验证与移动端适配报告) §三 B8。
+4. 税务模块为辅助估算，不覆盖所有减免情形，不构成申报依据。**注意：资本利得按移动加权平均口径计算，不随「成本核算方法」的 FIFO 设置变化**。
 5. 单节点、单 SQLite 文件设计，面向个人单实例使用，不做高可用。
 
 ---
