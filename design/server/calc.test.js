@@ -368,7 +368,9 @@ const near = (name, got, want, tol = 0.001) => {
   const x = C.portfolioXirr(S);
   eq('仅期初建仓 1 万→现值 1.2 万 XIRR ≈ +20%', x, 0.2, 0.005);
   const s = C.summary(S);
-  eq('展示口径 总资产 = 0+2000', s.totalAssets, 2000, 0.01);
+  /* v7.1：总资产 = 真实净资产 = 持仓市值 + 现金 − 融资余额
+     （仅期初建仓、无融资时 = 市值 = 12000。旧的「投入+收益」会低估为 2000） */
+  eq('总资产 = 真实净资产（市值+现金−融资）', s.totalAssets, 12000, 0.01);
   eq('真实可变现 = 12000', s.mv + s.cash, 12000, 0.01);
   const fl = C.portfolioFlows(S);
   const t0 = new Date(fl[0].date).getTime();
@@ -424,6 +426,39 @@ const near = (name, got, want, tol = 0.001) => {
     { assetId: 'F1', date: '2024-01-01', kind: 'invest', side: null, qty: 10000, price: 1, fee: 0, fx: 1 },
     { assetId: 'F1', date: '2024-06-01', kind: 'income', side: null, amount: -500, fee: 0, fx: 1 }]);
   eq('负数利息计入成本收益（−500）', C.calcAsset(F1, S4).totalCNY, -500, 0.01);
+}
+
+/* =========================================================
+ * 场景23 融资口径不变量：融资不得进入收益，总资产须为净资产
+ * ========================================================= */
+{
+  console.log('\n— 场景23 融资口径不变量 —');
+  const mk = (assets, events, cfs) => ({
+    fx: [{ date: '2024-01-01', rate: 7, source: 'manual' }], settings: {},
+    accounts: [{ id: 'A', kind: 'broker', currency: 'CNY' }],
+    assets, events, cashFlows: cfs || [], snapshots: [],
+  });
+  const A = { id: 'S1', accountId: 'A', name: '标的', type: 'stock', currency: 'CNY', price: 2.5 / 3 * 10 };
+  /* 买 3 万（其中融资 1 万）→ 自付 2 万；现值 2.5 万 */
+  const S = mk([A], [{ assetId: 'S1', date: '2024-01-01', kind: 'buy', side: 'buy', qty: 3000, price: 10, fee: 0, fx: 1, marginCNY: 10000 }],
+    [{ accountId: 'A', date: '2024-01-01', kind: 'deposit', amount: 20000, fx: 1 }]);
+  const s = C.summary(S), r = C.calcAsset(A, S);
+  eq('融资余额 10000', r.marginCNY, 10000, 0.01);
+  eq('实际净值 = 市值 − 融资 = 15000', r.netValueCNY, 15000, 0.01);
+  eq('自付本金 = 成本 − 融资 = 20000', r.selfCostCNY, 20000, 0.01);
+  eq('收益 = 实际净值 − 自付本金 = −5000（融资不计入收益）', r.netValueCNY - r.selfCostCNY, -5000, 0.01);
+  eq('引擎收益同为 −5000', r.totalCNY, -5000, 0.01);
+  eq('总资产 = 净资产 = 15000', s.totalAssets, 15000, 0.01);
+  eq('总资产 = 投入 + 收益（正常记法下自洽）', s.totalAssets, s.invest + s.profit, 0.01);
+  eq('全局融资合计 10000', s.marginTotal, 10000, 0.01);
+  /* 融资额变化不应凭空改变收益，只改变净值与自付 */
+  const A2 = { id: 'S1', accountId: 'A', name: '标的', type: 'stock', currency: 'CNY', price: 2.5 / 3 * 10 };
+  const S2 = mk([A2], [{ assetId: 'S1', date: '2024-01-01', kind: 'buy', side: 'buy', qty: 3000, price: 10, fee: 0, fx: 1, marginCNY: 20000 }],
+    [{ accountId: 'A', date: '2024-01-01', kind: 'deposit', amount: 10000, fx: 1 }]);
+  const s2 = C.summary(S2), r2 = C.calcAsset(A2, S2);
+  eq('融资 2 万时余额 20000', r2.marginCNY, 20000, 0.01);
+  eq('融资 2 万时收益仍为 −5000（成本口径不变）', r2.totalCNY, -5000, 0.01);
+  eq('融资 2 万时总资产 = 5000（净资产）', s2.totalAssets, 5000, 0.01);
 }
 
 console.log(`\n===== 结果: ${pass} 通过, ${fail} 失败 =====`);

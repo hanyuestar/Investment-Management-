@@ -3,7 +3,7 @@
     <div class="page-head">
       <div>
         <h2>账户</h2>
-        <div class="sub">券商 / 银行 / 其他账户的市值、收益与出入金汇总</div>
+        <div class="sub">券商 / 银行 / 其他账户的市值、收益与出入金汇总；券商账户另显示融资余额（欠券商的钱，需原样偿还）</div>
       </div>
       <div class="actions">
         <el-button type="primary" @click="ops.createAccount()">新增账户</el-button>

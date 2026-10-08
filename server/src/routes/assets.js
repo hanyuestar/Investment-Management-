@@ -111,6 +111,15 @@ router.post('/', asyncHandler(async (req, res) => {
 
   const marginCNY = parseMargin(b, account, opening ? opening.date : null);
   if (typeof marginCNY === 'string') return badRequest(res, marginCNY);
+  /* 融资额不得超过期初建仓成本（成本请填「自付 + 融资」的总额） */
+  if (marginCNY > 0 && opening) {
+    const oCost = (+opening.costPrice > 0 && +opening.qty > 0)
+      ? +opening.costPrice * +opening.qty
+      : (+opening.amount > 0 ? +opening.amount : 0);
+    if (oCost > 0 && marginCNY > oCost + 1e-6) {
+      return badRequest(res, `融资额（¥${marginCNY}）不能超过期初建仓成本（¥${oCost.toFixed(2)}）—— 成本请填「自付 + 融资」的总额`);
+    }
+  }
 
   const info = getDb().prepare(`INSERT INTO asset
     (user_id,account_id,name,code,market,type,currency,price,market_value,unit_price,margin_cny,alerts_json,created_at)

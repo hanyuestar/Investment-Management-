@@ -3,7 +3,7 @@
     <div class="page-head">
       <div>
         <h2>交易流水</h2>
-        <div class="sub">全部交易与现金流事件，成本/盈亏的唯一数据源（USD 事件显示锁定汇率）</div>
+        <div class="sub">全部交易与现金流事件，成本/盈亏的唯一数据源（USD 事件显示锁定汇率）；买入 / 卖出 / 申购 / 赎回 / 分红可录手续费，券商账户可录本次融资</div>
       </div>
       <div class="actions">
         <el-button type="primary" @click="openAdd">+ 录入流水</el-button>

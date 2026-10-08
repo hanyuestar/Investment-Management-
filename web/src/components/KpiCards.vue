@@ -3,7 +3,9 @@
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">总资产 (CNY)</div>
       <div class="val num">¥{{ money(k.totalAssets) }}</div>
-      <div class="sub num muted">累计投入 {{ money(k.invest) }} + 累计收益 {{ signedMoney(k.profit) }}</div>
+      <div class="sub num muted">
+        市值 {{ money(k.mv) }} + 现金 {{ signedMoney(k.cash) }}<template v-if="k.marginTotal > 0"> − 融资 {{ money(k.marginTotal) }}</template>
+      </div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">累计投入 (CNY)</div>

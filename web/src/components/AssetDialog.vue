@@ -72,10 +72,13 @@
           <el-input-number v-model="form.margin" :min="0" :precision="2" controls-position="right" style="width:150px" />
         </el-form-item>
         <el-form-item label=" ">
-          <span class="form-tip" style="line-height:1.6">
-            {{ ccyName(form.marginCurrency) }}；当前该资产已使用的<b>融资额</b>（欠券商的钱，需原样偿还）。
-            留空或 0 表示无融资。后续买入可在流水中分别录入每次使用的融资额。
-          </span>
+          <div class="form-tip" style="line-height:1.7">
+            单位为{{ ccyName(form.marginCurrency) }}；当前该资产已使用的<b>融资额</b>（欠券商的钱，需原样偿还）。
+            留空或 0 表示无融资。
+            <br>
+            ⚠️ 下方的<b>期初建仓成本请填「自付 + 融资」的总额</b>（融资是其中借来的部分），
+            否则融资部分会被误算成收益。后续买入可在流水中分别录入每次使用的融资额。
+          </div>
         </el-form-item>
       </template>
 

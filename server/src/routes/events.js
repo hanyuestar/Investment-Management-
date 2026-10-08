@@ -62,6 +62,9 @@ function normalize(body, asset) {
       if (!(qty > 0) || !(price > 0)) return { error: '数量与成交价需大于 0' };
       v.qty = qty; v.price = price;
       v.marginCNY = marginCNY;      // 买入：本次使用的融资额；卖出：忽略（还款由引擎按所得自动计算）
+      if (type === 'buy' && marginCNY > qty * price + 1e-6) {
+        return { error: `融资额（¥${marginCNY}）不能超过成交金额（¥${+(qty * price).toFixed(2)}）—— 成交金额请填「自付 + 融资」的总额` };
+      }
     } else if (type === 'div') {
       const r = incomeAmount();
       if (r.error) return r;
@@ -95,6 +98,9 @@ function normalize(body, asset) {
       }
       v.qty = qty; v.price = price; v.amount = +(qty * price).toFixed(2);
       v.marginCNY = marginCNY;      // 申购：本次使用的融资额
+      if (type === 'invest' && marginCNY > qty * price + 1e-6) {
+        return { error: `融资额（¥${marginCNY}）不能超过申购金额（¥${+(qty * price).toFixed(2)}）—— 金额请填「自付 + 融资」的总额` };
+      }
     } else {
       const r = incomeAmount();
       if (r.error) return r;

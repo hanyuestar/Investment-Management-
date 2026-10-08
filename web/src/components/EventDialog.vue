@@ -102,10 +102,19 @@
           <el-input-number v-model="form.margin" :min="0" :precision="2" controls-position="right" style="width:150px" />
         </el-form-item>
         <el-form-item label=" ">
-          <span class="form-tip" style="line-height:1.6">
-            {{ ccyName(form.marginCurrency) }}；留空或 0 表示全部用自有资金。
-            <b>卖出所得会优先偿还融资</b>，融资余额要原样还给券商，不计入你的收益。
-          </span>
+          <div class="form-tip" style="line-height:1.7">
+            单位为{{ ccyName(form.marginCurrency) }}；留空或 0 表示全部用自有资金。
+            <br>
+            ⚠️ 这里的<b>成交金额 / 申购金额请填「自付 + 融资」的总额</b>（融资是其中借来的部分）。
+            <template v-if="+form.margin > 0">
+              <br>
+              本次 <b>总额 {{ fmtMoney(grossAmount) }}</b> − <b>融资 {{ fmtMoney(+form.margin) }}</b>
+              = <b>你要自付 {{ fmtMoney(selfPaid) }}</b> {{ form.marginCurrency }}
+              <span v-if="selfPaid < 0" style="color:#c45656">（融资额已超过总额，请检查录入）</span>
+            </template>
+            <br>
+            <b>卖出所得会优先偿还融资</b>，融资余额需原样还给券商，不计入你的收益。
+          </div>
         </el-form-item>
       </template>
 
@@ -161,6 +170,20 @@ const computedAmount = computed(() => {
   return v > 0 ? v.toFixed(2) : '—';
 });
 const store = usePortfolioStore();
+/** 本次买入/申购的成交总额（资产币种） */
+const grossAmount = computed(() => (+form.qty || 0) * (+form.price || 0));
+/** 自付 = 成交总额 − 融资额（把融资换算到同一币种后相减） */
+const selfPaid = computed(() => {
+  const m = +form.margin || 0;
+  if (!(m > 0)) return 0;
+  const rate = +form.fx || 0;
+  const mAcct = form.marginCurrency === 'USD' ? m * rate : m;      // 融资（账户币种）
+  const acctCur = accountCurrency.value, astCur = props.asset?.currency || 'CNY';
+  const gAcct = astCur === acctCur ? grossAmount.value
+    : (astCur === 'USD' ? grossAmount.value * rate : grossAmount.value / rate);
+  return +(gAcct - mAcct).toFixed(2);
+});
+const fmtMoney = v => (Math.round((+v || 0) * 100) / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 /** 账户是否券商（仅券商可融资） */
 const isBroker = computed(() => {
   const acc = store.accounts.find(a => a.id === props.asset?.accountId);

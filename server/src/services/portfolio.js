@@ -118,7 +118,7 @@ function computeAll(userId, accountId) {
 
   const kpis = {
     /* ── 单一口径三件套（v6）── */
-    totalAssets: s.totalAssets,          // 总资产 = 累计投入 + 累计收益
+    totalAssets: s.totalAssets,          // 总资产 = 持仓市值 + 现金 − 融资余额（净资产）
     invest: s.invest,                    // 累计投入 = 净入金（入金 − 出金）
     profit: s.profit,                    // 累计收益（唯一口径，不再分账户/持仓）
     rate: s.rate,                        // 收益率 = 累计收益 / 累计投入

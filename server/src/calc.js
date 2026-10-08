@@ -257,12 +257,15 @@
   function accountCash(S, opts) {
     const accId = opts && opts.accountId;
     const inAcc = x => !accId || x.accountId === accId;
-    let cash = 0, dep = 0, wd = 0, openCost = 0;
+    let cash = 0, dep = 0, wd = 0, openCost = 0, marginBal = 0;
     (S.cashFlows || []).filter(inAcc).forEach(c => {
       const v = (c.amount || 0) * (c.fx || 1);
       if (c.kind === 'deposit') { dep += v; cash += v; } else { wd += v; cash -= v; }
     });
     (S.assets || []).filter(inAcc).forEach(a => {
+      /* 融资余额时序演进（与 calcUnified 一致）：
+         期初融资 + 各笔买入融资 − 卖出所得优先偿还部分 */
+      let mBal = +a.marginCNY > 0 ? +a.marginCNY : 0;
       eventsOf(S, a.id).forEach(e => {
         const act = actionOf(e);
         const f = e.fx || 1;
@@ -272,18 +275,33 @@
         const fee = e.fee || 0;
         switch (act) {
           case 'opening': openCost += (gross + fee) * f; break;       // 不产生现金流
-          case 'buy': case 'invest': cash -= (gross + fee) * f; break;
-          case 'sell': case 'redeem': cash += (gross - fee) * f; break;
+          case 'buy': case 'invest': {
+            /* 融资部分由券商直接支付，不占用账户现金 → 现金只扣「自付」 */
+            const mb = +e.marginCNY > 0 ? +e.marginCNY : 0;
+            mBal += mb;
+            cash -= (gross + fee) * f - mb;
+            break;
+          }
+          case 'sell': case 'redeem': {
+            /* 卖出所得优先偿还融资，只有剩余部分回到现金 */
+            const proceeds = (gross - fee) * f;
+            const repay = Math.min(proceeds > 0 ? proceeds : 0, mBal);
+            if (repay > 0) mBal -= repay;
+            cash += proceeds - repay;
+            break;
+          }
           case 'div': case 'income': cash += tAmt * f; break;
           default: break;                                            // bonus / split 不影响现金
         }
       });
+      marginBal += mBal;
     });
     return {
       cash: round2(cash), deposit: round2(dep), withdraw: round2(wd),
       netDeposit: round2(dep - wd),          // 净入金（仅出入金）
       net: round2(dep - wd),                 // ★ 兼容旧字段名（= 净入金）
       openingCost: round2(openCost),         // 期初建仓本金
+      marginBalance: round2(marginBal),      // 融资余额合计（欠券商，需原样偿还）
       effectiveInvest: round2(dep - wd + openCost)   // 有效净投入 = 净入金 + 期初建仓本金
     };
   }
@@ -310,7 +328,8 @@
       const cf = accountCash(S, { accountId: acc.id });
       const profit = round2(profitInvest);          // 累计收益（单一，= 已实现+分红+利息+浮动）
       const invest = cf.netDeposit;                 // 累计投入 = 净入金
-      const totalAssets = round2(invest + profit);  // 总资产 = 累计投入 + 累计收益
+      /* 总资产 = 净资产 = 持仓市值 + 现金 − 融资余额（见 summary 中的说明） */
+      const totalAssets = round2(mv + cf.cash - accMargin);
       return {
         account: acc, count: assets.length,
         mv: round2(mv), cash: cf.cash, totalAssets,
@@ -388,11 +407,14 @@
     /* v6 单一口径（用户定义）：
      *   累计投入 = 净入金（入金 − 出金）        —— 期初建仓本金**不计入**
      *   累计收益 = 已实现 + 分红 + 利息 + 浮动  —— 唯一口径，不再区分「账户/持仓」
-     *   总资产   = 累计投入 + 累计收益
+     *   总资产   = 持仓市值 + 账户现金 − 融资余额（真实净资产）
      */
     const profit = round2(real + unreal);
     const invest = cf.netDeposit;
-    const totalAssets = round2(invest + profit);
+    /* 总资产 = 真实净资产 = 持仓市值 + 账户现金 − 融资余额
+       ⚠️ 不可再用「累计投入 + 累计收益」：融资既不进累计投入、
+          又要从净值中扣除，用投入+收益会在有融资时算出错误结果。 */
+    const totalAssets = round2(mv + cf.cash - marginTotal);
     return {
       /* 持仓构成 */
       total: round2(mv),                    // 兼容旧字段名（= 持仓市值）
@@ -401,7 +423,7 @@
       /* 单一口径三件套 */
       invest,                               // 累计投入 = 净入金
       profit,                               // 累计收益（唯一口径）
-      totalAssets,                          // 总资产 = 累计投入 + 累计收益
+      totalAssets,                          // 总资产 = 持仓市值 + 现金 − 融资余额（净资产）
       rate: invest > 0 ? profit / invest : 0,
       /* 兼容别名（v5 双口径字段，现均指向同一值） */
       profitInvest: profit, profitAccount: profit, accountRate: invest > 0 ? profit / invest : 0,
