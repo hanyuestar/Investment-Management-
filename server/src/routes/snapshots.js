@@ -19,7 +19,7 @@ router.post('/', asyncHandler(async (req, res) => {
   const month = String(req.body?.month || '').slice(0, 7);
   const total = Number(req.body?.total);
   if (!/^\d{4}-\d{2}$/.test(month)) return badRequest(res, '月份格式应为 YYYY-MM');
-  if (!(total >= 0)) return badRequest(res, '月末总资产需为非负数');
+  if (!(total >= 0)) return badRequest(res, '月末持仓市值需为非负数');
   const db = getDb();
   db.prepare(`INSERT INTO snapshot (user_id,month,total) VALUES (?,?,?)
               ON CONFLICT(user_id,month) DO UPDATE SET total=excluded.total`)

@@ -10,7 +10,7 @@
     <div class="grid-sidebar">
       <div class="card">
         <h3>月末快照（TWR / 基准曲线 / 含浮动收益的输入）</h3>
-        <div class="sub">填<b>月末持仓市值</b>（<b>不含账户现金与融资</b>）：月度浮动收益 = 快照差 − 当月证券净投入（买卖/申赎）。注意「总资产」另按「市值 + 现金 − 融资余额」计算，两者口径不同。</div>
+        <div class="sub">填<b>月末持仓市值</b>（<b>不含账户现金与融资</b>）：月度浮动收益 = 快照差 − 当月证券净投入（买卖/申赎）。快照口径与首页「持仓市值」一致，均不含账户现金。</div>
         <div class="toolbar">
           <el-date-picker v-model="snap.month" type="month" value-format="YYYY-MM" placeholder="月份" size="small" style="width:130px" />
           <el-input-number v-model="snap.total" :min="0" :precision="2" size="small" controls-position="right" style="width:180px" placeholder="月末持仓市值" />

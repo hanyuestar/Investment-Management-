@@ -11,7 +11,7 @@
     </div>
 
     <div class="kpi-row" style="grid-template-columns:repeat(4,1fr)">
-      <div class="kpi"><div class="label">总资产 (CNY)</div><div class="val num">¥{{ money(alloc.total) }}</div></div>
+      <div class="kpi"><div class="label">持仓市值 (CNY)</div><div class="val num">¥{{ money(alloc.total) }}</div></div>
       <div class="kpi"><div class="label">单边需调整金额</div><div class="val num" :class="driftLevel.cls">¥{{ money(alloc.drift) }}</div><div class="sub">Σ|当前−目标|/2</div></div>
       <div class="kpi"><div class="label">偏离度</div><div class="val num" :class="driftLevel.cls">{{ pct(alloc.driftPct) }}</div></div>
       <div class="kpi"><div class="label">再平衡建议</div>

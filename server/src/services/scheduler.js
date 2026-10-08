@@ -28,7 +28,7 @@ async function jobSyncFx() {
   console.log(`[cron] 汇率同步：${r.ok ? `1 USD = ${r.rate} CNY${r.usedFallback ? '（备用源）' : ''}` : r.error}`);
 }
 
-/** 月末快照：为每位用户记录当月末总资产 */
+/** 月末快照：为每位用户记录当月末持仓市值 */
 function jobMonthlySnapshot() {
   const db = getDb();
   const { month } = todayParts();

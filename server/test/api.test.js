@@ -90,16 +90,16 @@ test('POST /api/demo 装载示例数据', async () => {
   assert.ok(r.json.backupFile);
 });
 
-test('示例数据：总资产 ¥489,795.24 = 累计投入 466,800 + 累计收益 22,995.24', async () => {
+test('示例数据：持仓市值 ¥463,480.44、累计投入 ¥466,800、累计收益 ¥22,995.24', async () => {
   const r = await api('GET', '/api/compute', adminToken);
   assert.equal(r.status, 200);
   const k = r.json.kpis;
-  /* v6 单一口径：总资产 = 累计投入(=净入金) + 累计收益 */
-  assert.ok(Math.abs(k.totalAssets - 489795.24) < 0.02, `totalAssets=${k.totalAssets}`);
+  /* v1.0.4 起取消「总资产」概念：持仓口径以外统一展示「持仓市值」 */
+  assert.ok(k.totalAssets === undefined, 'kpis 不应再返回 totalAssets');
+  assert.ok(Math.abs(k.mv - 463480.44) < 0.02, `持仓市值=${k.mv}`);
   assert.ok(Math.abs(k.invest - 466800) < 0.02, `invest=${k.invest}`);
   assert.ok(Math.abs(k.profit - 22995.24) < 0.02, `profit=${k.profit}`);
-  assert.ok(Math.abs(k.mv - 463480.44) < 0.02, `持仓市值=${k.mv}`);
-  assert.ok(Math.abs(k.totalAssets - (k.invest + k.profit)) < 0.02, '总资产 = 累计投入 + 累计收益');
+  assert.ok(Math.abs(k.cash - 26314.80) < 0.02, `cash=${k.cash}`);
 });
 
 test('示例数据：茅台集中度 63.1%、分红税 10% 档 ¥30', async () => {

@@ -7,13 +7,13 @@
  *     计入份额与成本、计入净投入，但**不产生账户现金流**，并作为 XIRR 的初始存量。
  *  2. 【全类型份额】股票/基金/理财/债券统一走「份额 + 单位成本」框架，
  *     非股票不再只有金额，calcAsset 对任何类型都返回 qty / avgCNY。
- *  3. 【账户现金】新增 accountCash()：现金 = 入金−出金 − 买入−申购 + 卖出+赎回 + 分红+利息。
- *     总资产 = 持仓市值 + 现金。
+ *  3. 【账户现金】accountCash()：现金 = 入金−出金 − (买入−融资)−申购 + (卖出−还款)+赎回 + 分红+利息。
+ *     持仓口径以「持仓市值」对外展示；账户现金与融资余额各自独立展示，不做合成。
  *  4. 【双口径收益】
  *     - 持仓口径 profitInvest = 已实现 + 分红/利息 + 浮动（衡量投资能力，与 XIRR/TWR 同源）
- *     - 账户口径 profitAccount = 总资产 − 有效净投入（回答「我到底赚了多少」）
+ *     - 账户口径 profitAccount = 期末净值 − 有效净投入（回答「我到底赚了多少」）
  *     有效净投入 effectiveInvest = (入金−出金) + 期初建仓本金
- *  5. 【外部现金流只有出入金】月末快照存「总资产」，故
+ *  5. 【外部现金流只有出入金】月末快照存「持仓市值」，故
  *     月浮动 = 快照差 − 当月净入金；TWR 分母 = 上期总值 + 当月净入金。
  *     （v4 误用「证券买卖净额」作为外部现金流，导致出入金被当成收益）
  *  6. 【已实现口径统一】非股票赎回本金**不计入**已实现收益（v4 的 realizedByMonth 有此 bug）。
@@ -328,11 +328,9 @@
       const cf = accountCash(S, { accountId: acc.id });
       const profit = round2(profitInvest);          // 累计收益（单一，= 已实现+分红+利息+浮动）
       const invest = cf.netDeposit;                 // 累计投入 = 净入金
-      /* 总资产 = 净资产 = 持仓市值 + 现金 − 融资余额（见 summary 中的说明） */
-      const totalAssets = round2(mv + cf.cash - accMargin);
       return {
         account: acc, count: assets.length,
-        mv: round2(mv), cash: cf.cash, totalAssets,
+        mv: round2(mv), cash: cf.cash,
         netDeposit: cf.netDeposit, openingCost: cf.openingCost, effectiveInvest: cf.effectiveInvest,
         netInvest: round2(netInvest),
         feeTotal: round2(accFee),             // 该账户累计手续费
@@ -344,14 +342,14 @@
       };
     });
     const all = out.reduce((s, x) => ({
-      mv: s.mv + x.mv, cash: s.cash + x.cash, totalAssets: s.totalAssets + x.totalAssets,
+      mv: s.mv + x.mv, cash: s.cash + x.cash,
       invest: s.invest + x.invest, netInvest: s.netInvest + x.netInvest,
       profit: s.profit + x.profit
-    }), { mv: 0, cash: 0, totalAssets: 0, invest: 0, netInvest: 0, profit: 0 });
+    }), { mv: 0, cash: 0, invest: 0, netInvest: 0, profit: 0 });
     return {
       byAccount: out,
       total: {
-        mv: round2(all.mv), cash: round2(all.cash), totalAssets: round2(all.totalAssets),
+        mv: round2(all.mv), cash: round2(all.cash),
         invest: round2(all.invest), netInvest: round2(all.netInvest),
         profit: round2(all.profit), profitInvest: round2(all.profit), profitAccount: round2(all.profit),
         rate: all.invest > 0 ? all.profit / all.invest : 0,
@@ -407,14 +405,11 @@
     /* v6 单一口径（用户定义）：
      *   累计投入 = 净入金（入金 − 出金）        —— 期初建仓本金**不计入**
      *   累计收益 = 已实现 + 分红 + 利息 + 浮动  —— 唯一口径，不再区分「账户/持仓」
-     *   总资产   = 持仓市值 + 账户现金 − 融资余额（真实净资产）
      */
     const profit = round2(real + unreal);
     const invest = cf.netDeposit;
-    /* 总资产 = 真实净资产 = 持仓市值 + 账户现金 − 融资余额
-       ⚠️ 不可再用「累计投入 + 累计收益」：融资既不进累计投入、
-          又要从净值中扣除，用投入+收益会在有融资时算出错误结果。 */
-    const totalAssets = round2(mv + cf.cash - marginTotal);
+    /* 注：v1.0.4 起取消「总资产」概念，持仓口径以「持仓市值」对外展示；
+       现金与融资余额分别由 cash / marginTotal 单独给出，不做合成。 */
     return {
       /* 持仓构成 */
       total: round2(mv),                    // 兼容旧字段名（= 持仓市值）
@@ -423,7 +418,6 @@
       /* 单一口径三件套 */
       invest,                               // 累计投入 = 净入金
       profit,                               // 累计收益（唯一口径）
-      totalAssets,                          // 总资产 = 持仓市值 + 现金 − 融资余额（净资产）
       rate: invest > 0 ? profit / invest : 0,
       /* 兼容别名（v5 双口径字段，现均指向同一值） */
       profitInvest: profit, profitAccount: profit, accountRate: invest > 0 ? profit / invest : 0,
@@ -451,7 +445,7 @@
     });
     return m;
   }
-  /** 月度外部现金流：仅出入金（快照为「总资产」，故买卖/申赎属账户内部转移） */
+  /** 月度外部现金流：仅出入金（快照为「持仓市值」，故买卖/申赎属账户内部转移） */
   function netDepositByMonth(S, opts) {
     const accountId = opts && opts.accountId;
     const m = {}; const add = (k, v) => { if (k) m[k] = +((m[k] || 0) + v).toFixed(2); };
@@ -555,7 +549,7 @@
    *  真正的外部现金流只有两类：
    *    ① 出入金（入金=流出为负，出金=流入为正）
    *    ② 期初建仓本金（记账开始前已投入 → 视为初始流出）
-   *  期末流入 = 总资产（持仓市值 + 现金）。
+   *  期末流入 = 持仓市值 + 账户现金（真实可变现总值）。
    *  兼容：若用户完全没有记录出入金与期初建仓（数据不完整），退回「证券流水口径」近似，
    *  以免 XIRR 因缺少初始流出而失真。
    */
@@ -586,9 +580,8 @@
       });
       flows.sort((x, y) => (x.date < y.date ? -1 : x.date > y.date ? 1 : 0));
       /* 期末流入必须取**真实可变现总值**（持仓市值 + 账户现金），
-         不能用展示口径 totalAssets（= 累计投入 + 累计收益）——
-         两者仅在无期初建仓时相等；有期初建仓时 totalAssets 会少算本金，
-         导致 XIRR 严重失真（实测：仅期初建仓 1 万→现值 1.2 万，末值取 totalAssets 得 −80%，实际应为 +20%）。 */
+         也不能用任何「投入 + 收益」的合成口径 —— 存在期初建仓时它会少算本金，
+         导致 XIRR 严重失真（实测：仅期初建仓 1 万→现值 1.2 万，用合成口径得 −80%，实际应为 +20%）。 */
       const realizable = round2(s.mv + s.cash);
       if (realizable > 1e-9) flows.push({ date: asOf, amount: realizable, assetId: null, terminal: true, kind: 'realizable' });
     } else {

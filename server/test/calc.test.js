@@ -331,8 +331,9 @@ const near = (name, got, want, tol = 0.001) => {
   eq('净入金', cf.netDeposit, 15000, 0.01);
   eq('有效净投入(无期初)', cf.effectiveInvest, 15000, 0.01);
   const s3 = C.summary(S3);
-  eq('总资产=持仓+现金', s3.totalAssets, 12000 + 5000, 0.01);
-  eq('账户口径收益=总资产−累计投入', s3.profitAccount, 17000 - 15000, 0.01);
+  eq('持仓市值', s3.mv, 12000, 0.01);
+  eq('账户现金', s3.cash, 5000, 0.01);
+  eq('累计收益 = 已实现 + 浮动', s3.profitAccount, 17000 - 15000, 0.01);
   eq('持仓口径收益(浮动2000)', s3.profitInvest, 2000, 0.01);
   eq('两口径一致', s3.profitAccount, s3.profitInvest, 0.01);
 
@@ -341,19 +342,20 @@ const near = (name, got, want, tol = 0.001) => {
   S4.cashFlows.push({ accountId: 'acc1', date: '2026-04-01', kind: 'withdraw', amount: 3000, fx: 1 });
   eq('再出金 3000 后累计投入下降', C.summary(S4).invest, 12000, 0.01);
   eq('再出金后现金', C.accountCash(S4).cash, 2000, 0.01);
-  /* 清仓后总资产不再归零（含现金） */
+  /* 清仓后持仓市值归零、现金留存 */
   const S5 = JSON.parse(JSON.stringify(S3));
   S5.events.push({ assetId: 's1', date: '2026-06-01', side: 'sell', qty: 1000, price: 12, fee: 0, fx: 1 });
   const s5 = C.summary(S5);
   eq('清仓后持仓市值', s5.mv, 0, 0.01);
   eq('清仓后现金(20000−5000−10000+12000)', s5.cash, 17000, 0.01);
-  eq('清仓后总资产≠0', s5.totalAssets, 17000, 0.01);
+  eq('清仓后持仓市值 = 0', s5.mv, 0, 0.01);
+  eq('清仓后现金 = 17000', s5.cash, 17000, 0.01);
   eq('清仓后账户口径收益', s5.profitAccount, 2000, 0.01);
 }
 
 /* =========================================================
  * 场景21 回归：XIRR 末值必须取「真实可变现总值」(mv + cash)
- * 曾误用展示口径 totalAssets，导致「仅期初建仓」场景严重失真
+ * 曾误用「投入 + 收益」的合成口径，导致「仅期初建仓」场景严重失真
  * ========================================================= */
 {
   console.log('\n— 场景21 XIRR 末值口径 —');
@@ -368,10 +370,9 @@ const near = (name, got, want, tol = 0.001) => {
   const x = C.portfolioXirr(S);
   eq('仅期初建仓 1 万→现值 1.2 万 XIRR ≈ +20%', x, 0.2, 0.005);
   const s = C.summary(S);
-  /* v7.1：总资产 = 真实净资产 = 持仓市值 + 现金 − 融资余额
-     （仅期初建仓、无融资时 = 市值 = 12000。旧的「投入+收益」会低估为 2000） */
-  eq('总资产 = 真实净资产（市值+现金−融资）', s.totalAssets, 12000, 0.01);
-  eq('真实可变现 = 12000', s.mv + s.cash, 12000, 0.01);
+  /* v1.0.4 起取消「总资产」；持仓市值与现金各自独立展示 */
+  eq('持仓市值 = 12000', s.mv, 12000, 0.01);
+  eq('真实可变现 = 持仓市值 + 现金 = 12000', s.mv + s.cash, 12000, 0.01);
   const fl = C.portfolioFlows(S);
   const t0 = new Date(fl[0].date).getTime();
   const npv = fl.reduce((a, f) => a + f.amount / Math.pow(1 + x, (new Date(f.date).getTime() - t0) / 31536000000), 0);
@@ -429,7 +430,7 @@ const near = (name, got, want, tol = 0.001) => {
 }
 
 /* =========================================================
- * 场景23 融资口径不变量：融资不得进入收益，总资产须为净资产
+ * 场景23 融资口径不变量：融资不得进入收益与累计投入
  * ========================================================= */
 {
   console.log('\n— 场景23 融资口径不变量 —');
@@ -448,8 +449,8 @@ const near = (name, got, want, tol = 0.001) => {
   eq('自付本金 = 成本 − 融资 = 20000', r.selfCostCNY, 20000, 0.01);
   eq('收益 = 实际净值 − 自付本金 = −5000（融资不计入收益）', r.netValueCNY - r.selfCostCNY, -5000, 0.01);
   eq('引擎收益同为 −5000', r.totalCNY, -5000, 0.01);
-  eq('总资产 = 净资产 = 15000', s.totalAssets, 15000, 0.01);
-  eq('总资产 = 投入 + 收益（正常记法下自洽）', s.totalAssets, s.invest + s.profit, 0.01);
+  eq('持仓市值 = 25000', s.mv, 25000, 0.01);
+  eq('账户现金（自付已由入金覆盖）', s.cash, 0, 0.01);
   eq('全局融资合计 10000', s.marginTotal, 10000, 0.01);
   /* 融资额变化不应凭空改变收益，只改变净值与自付 */
   const A2 = { id: 'S1', accountId: 'A', name: '标的', type: 'stock', currency: 'CNY', price: 2.5 / 3 * 10 };
@@ -458,7 +459,7 @@ const near = (name, got, want, tol = 0.001) => {
   const s2 = C.summary(S2), r2 = C.calcAsset(A2, S2);
   eq('融资 2 万时余额 20000', r2.marginCNY, 20000, 0.01);
   eq('融资 2 万时收益仍为 −5000（成本口径不变）', r2.totalCNY, -5000, 0.01);
-  eq('融资 2 万时总资产 = 5000（净资产）', s2.totalAssets, 5000, 0.01);
+  eq('融资 2 万时持仓市值仍为 25000', s2.mv, 25000, 0.01);
 }
 
 console.log(`\n===== 结果: ${pass} 通过, ${fail} 失败 =====`);

@@ -67,7 +67,7 @@ function computeAll(userId, accountId) {
    *   · 期初建仓 = 这笔钱在**开始记账前**就已投入（系统外）
    *   · 入金     = 这笔钱在**记账期内**转入账户（系统内）
    * 若两者同时存在且金额接近，极可能是同一笔钱被记了两次：
-   *   总资产 会因「假现金」虚增，累计投入 也会双倍计数。
+   *   账户现金会因「假现金」虚增，累计投入 也会双倍计数。
    * 这里只做**提示**（不自动改数），并给出两条修正路径。
    */
   const warnings = [];
@@ -81,13 +81,13 @@ function computeAll(userId, accountId) {
       netDeposit: s.netDeposit,
       mightDup: dup,
       /* ⚠️ 注意：**不可**建议「删除入金」—— 按 v6 口径 累计投入 = 净入金，
-         删掉入金会让累计投入归零、总资产变成负数（实测 −1,797.01）。
+         删掉入金会让累计投入归零、收益失真（实测会变成负数）。
          唯一正确的修法是把期初建仓改为买入/申购事件（保留入金）。 */
       msg: `同时存在「期初建仓本金 ¥${s.openingCost}」与「净入金 ¥${s.netDeposit}」。`
         + `累计投入只按净入金计（不受影响），但**账户现金**会出现并不存在的余额`
         + `（约 ¥${dup}，这笔钱其实已变成持仓）。`
         + `若是同一笔钱：请把该笔「期初建仓」改为等额的**买入/申购**事件（保留入金），`
-        + `**切勿删除入金**（会导致累计投入归零、总资产为负）。`
+        + `**切勿删除入金**（会导致累计投入归零、收益失真）。`
         + `若入金是另外新转入的钱，可点「不再提示」。`,
     });
   }
@@ -99,7 +99,7 @@ function computeAll(userId, accountId) {
       title: '账户现金为负',
       cash: s.cash, marginTotal: s.marginTotal,
       msg: `账户现金为 ¥${s.cash}，已超出融资余额（¥${s.marginTotal}）可解释的范围，`
-        + `说明有**漏记的入金**。请到「出入金」页补录，否则总资产会偏低。`
+        + `说明有**漏记的入金**。请到「出入金」页补录，否则账户现金会偏低。`
         + `（提示：买入/申购不要再记入金——同一笔钱只在「入金」时算一次外部流入。）`,
     });
   }
@@ -111,14 +111,13 @@ function computeAll(userId, accountId) {
       openingCost: s.openingCost,
       msg: `检测到期初建仓本金 ¥${s.openingCost}，但没有对应入金记录。`
         + `按当前口径「累计投入 = 净入金」，这笔本金**未计入累计投入**，`
-        + `因此「总资产」会比实际少算约 ¥${s.openingCost}。`
+        + `因此「累计投入」会比实际少算约 ¥${s.openingCost}。`
         + `请到「出入金」页补录一笔等额入金（若这笔钱是记账前就投入的，也需补录以体现本金）。`,
     });
   }
 
   const kpis = {
     /* ── 单一口径三件套（v6）── */
-    totalAssets: s.totalAssets,          // 总资产 = 持仓市值 + 现金 − 融资余额（净资产）
     invest: s.invest,                    // 累计投入 = 净入金（入金 − 出金）
     profit: s.profit,                    // 累计收益（唯一口径，不再分账户/持仓）
     rate: s.rate,                        // 收益率 = 累计收益 / 累计投入
@@ -159,7 +158,7 @@ function computeAll(userId, accountId) {
     performance: {
       xirr: pct(xirr), twr: pct(twr), simpleAnnualized: pct(simpleAnn),
       cumulativeRate: s.rate, holdingDays: days,
-      totalAssets: s.totalAssets, invest: s.invest, profit: s.profit,
+      invest: s.invest, profit: s.profit,
       real: s.real, unreal: s.unreal, mv: s.mv, cash: s.cash,
       netDeposit: s.netDeposit, openingCost: s.openingCost,
       netInvest: s.netInvest, buyTotal: s.buyTotal,

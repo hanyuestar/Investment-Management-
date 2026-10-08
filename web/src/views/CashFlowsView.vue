@@ -4,7 +4,7 @@
       <div>
         <h2>出入金</h2>
         <div class="sub">累计投入 = 净入金（入金 − 出金）；出入金同时作为 XIRR 的外部现金流</div>
-        <div class="sub" style="margin-top:2px">此处只记录<b>外部资金进出账户</b>。用账户里的钱买股票/基金属于<b>账户内部转移</b>，请勿重复登记入金（否则现金与总资产会虚增）。</div>
+        <div class="sub" style="margin-top:2px">此处只记录<b>外部资金进出账户</b>。用账户里的钱买股票/基金属于<b>账户内部转移</b>，请勿重复登记入金（否则账户现金会虚增）。</div>
       </div>
       <div class="actions">
         <el-button type="primary" @click="ops.addCash()">+ 登记出入金</el-button>
