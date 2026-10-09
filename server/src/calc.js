@@ -327,6 +327,40 @@
       effectiveInvest: round2(dep - wd + openCost)   // 有效净投入 = 净入金 + 期初建仓本金
     };
   }
+  /**
+   * 指定日期的融资余额合计（按时序重放到 asOfDate 含当日）。
+   * 用于「年初投入本金 = 上年 12/31 的净资产」：需要当时的融资金额。
+   * 口径与 calcUnified 的融资演进一致：期初融资 + 各笔买入融资 − 卖出所得优先偿还。
+   */
+  function marginBalanceAt(S, asOfDate, opts) {
+    const accId = opts && opts.accountId;
+    const inAcc = x => !accId || x.accountId === accId;
+    let total = 0;
+    (S.assets || []).filter(inAcc).forEach(a => {
+      let bal = +a.marginCNY > 0 ? +a.marginCNY : 0;
+      eventsOf(S, a.id).forEach(e => {
+        if (e.date > asOfDate) return;
+        const act = actionOf(e);
+        const f = e.fx || 1;
+        const tQty = +e.qty || 0, tAmt = e.amount != null ? +e.amount || 0 : 0;
+        const px = +e.price || (tQty > 0 ? tAmt / tQty : 0);
+        const gross = tQty > 0 ? tQty * px : tAmt;
+        if (act === 'buy' || act === 'invest') {
+          const mb = +e.marginCNY > 0 ? +e.marginCNY : 0;
+          if (mb > 0) bal += mb;
+        } else if (act === 'sell' || act === 'redeem') {
+          const proceeds = (gross - (e.fee || 0)) * f;
+          if (bal > 0) {
+            const repay = Math.min(proceeds > 0 ? proceeds : 0, bal);
+            if (repay > 0) bal -= repay;
+          }
+        }
+      });
+      total += Math.max(0, bal);
+    });
+    return round2(total);
+  }
+
   /** 兼容旧名：仅出入金汇总 */
   function cashFlowSummary(S, opts) {
     const c = accountCash(S, opts);
@@ -804,7 +838,7 @@
   }
 
   return { DEFAULTS, TAX_DEFAULT, ALLOC_DEFAULT, TODAY, currentFx, assetFx, eventsOf, actionOf, unitPriceOf,
-    calcAsset, assetTotal, accountCash, cashFlowSummary,
+    calcAsset, assetTotal, accountCash, cashFlowSummary, marginBalanceAt,
     accountSummary, securityAggregation, summary, realizedByMonth, netDepositByMonth, netInvestByMonth, monthRows, yearRows,
     xirr, portfolioFlows, portfolioXirr, annualized, holdingDays, twr, allocation, concentration, benchmark,
     realizedGainsByYear, taxEstimate, dcaGenerate, checkAlerts };

@@ -34,9 +34,16 @@
       <div class="sub">组合 TWR − 基准涨跌</div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
-      <div class="label">本年收益</div>
-      <div class="val num" :class="signClass(k.yearProfit)">{{ signedMoney(k.yearProfit) }}</div>
-      <div class="sub num muted">汇率 1 USD = {{ Number(k.fxCurrent || 7.1).toFixed(4) }}</div>
+      <div class="label">本年收益 ({{ yearLabel }})</div>
+      <div class="val num" :class="signClass(k.yearProfit)">{{ k.yearProfit == null ? '—' : signedMoney(k.yearProfit) }}</div>
+      <div class="sub num" :class="signClass(k.yearProfit)">
+        已实现 {{ k.yearReal == null ? '—' : signedMoney(k.yearReal) }}
+        ＋ 浮动 {{ k.yearFloat == null ? '—' : signedMoney(k.yearFloat) }}
+      </div>
+      <div class="sub num muted" :title="yearBaseTitle">
+        年收益率 <span :class="signClass(k.yearRate)">{{ k.yearRate == null ? '—' : signedPct(k.yearRate) }}</span>
+        <template v-if="k.yearBaseInvest != null">（本金 {{ money(k.yearBaseInvest) }}）</template>
+      </div>
     </div>
   </div>
 
@@ -50,13 +57,27 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import { usePortfolioStore } from '../stores/portfolio';
 import { money, signedMoney, signedPct, signClass } from '../utils/format';
 
 const store = usePortfolioStore();
 const { kpis: k, warnings, pulse } = storeToRefs(store);
+
+/** 本年收益的统计区间标签 */
+const yearLabel = computed(() => `${new Date().getFullYear()}/1/1 – 12/31`);
+/** 年收益率的本金来源说明（悬停可见） */
+const yearBaseTitle = computed(() => {
+  const v = k.value || {};                      // 注意：解构名是 k，不能写 kpis
+  const y = new Date().getFullYear();
+  if (v.yearRate == null) return '本年收益或投入本金不足，暂不计算年收益率';
+  if (v.yearBaseSource === 'prev-year-end') {
+    return `年收益率 = 本年收益 ÷ 年投入本金；本金取 ${y - 1}/12/31 的持仓市值剔除融资后的净资产（¥${v.yearBaseInvest}）`;
+  }
+  return `年收益率 = 本年收益 ÷ 年投入本金；因缺少 ${y - 1}/12/31 的月末快照，本金退化为本年净入金（¥${v.yearBaseInvest}）`;
+});
+
 const flashing = ref(false);
 let timer = null;
 watch(pulse, () => {

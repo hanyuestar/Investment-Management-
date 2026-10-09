@@ -54,11 +54,33 @@ function computeAll(userId, accountId) {
     return { market: mk, year: y, gain, tax: round2(Math.max(0, gain) * rate) };
   }));
 
-  // 本年收益 = 全年已实现 + 全年浮动（有快照时）；无快照时仅已实现
+  /* ---------- 本年收益（1/1 ~ 12/31）----------
+   * 本年已实现 = 当年 已实现 + 分红 + 利息（按月汇总）
+   * 本年浮动   = Σ(月末快照差 − 当月证券净投入)（纯浮动，需月末快照；无快照则为 null）
+   * 本年收益   = 已实现 + 浮动
+   */
   const nowYear = Calc.TODAY().slice(0, 4);
   const yRow = years.find(y => y.year === nowYear);
   const yearProfit = yRow ? (yRow.hasF ? yRow.total : yRow.real) : null;
   const yearReal = yRow ? yRow.real : null;
+  const yearFloat = yRow && yRow.hasF ? yRow.pureFloat : null;   // 本年浮动（无快照时无意义）
+
+  /* 年投入本金：取**上一年 12/31 的净资产**（持仓市值 − 融资余额），用于计算年收益率。
+     缺失上年末快照时退化为「本年净入金」；两者皆无则不计算收益率。 */
+  const prevYear = String(Number(nowYear) - 1);
+  const prevDecSnap = (S.snapshots || []).find(x => x.month === `${prevYear}-12`);
+  const prevDecMargin = prevDecSnap ? Calc.marginBalanceAt(S, `${prevYear}-12-31`, opts) : 0;
+  let yearBaseInvest = null;
+  let yearBaseSource = null;
+  if (prevDecSnap) {
+    yearBaseInvest = round2((prevDecSnap.total || 0) - prevDecMargin);
+    yearBaseSource = 'prev-year-end';        // 上年 12/31 净资产
+  } else {
+    const yDep = yRow ? yRow.netDeposit : null;
+    if (yDep && Math.abs(yDep) > 1e-9) { yearBaseInvest = round2(yDep); yearBaseSource = 'current-year-deposit'; }
+  }
+  if (yearBaseInvest !== null && Math.abs(yearBaseInvest) < 1e-9) yearBaseInvest = null;   // 本金为 0 时不计算收益率
+  const yearRate = (yearProfit != null && yearBaseInvest) ? yearProfit / yearBaseInvest : null;
 
   const holdings = s.rows.map(({ a, r, mv, profit }) => ({ asset: a, calc: r, mvCNY: mv, profitCNY: profit }));
 
@@ -145,6 +167,10 @@ function computeAll(userId, accountId) {
     benchmarkCode: settings.benchmarkCode,
     yearProfit,
     yearReal,
+    yearFloat,                            // 本年浮动收益（无快照时为 null）
+    yearBaseInvest,                       // 年投入本金 = 上年 12/31 净资产（缺失时退化为本年净入金）
+    yearBaseSource,                       // 'prev-year-end' | 'current-year-deposit'
+    yearRate,                             // 年收益率 = 本年收益 ÷ 年投入本金
     fxCurrent: Calc.currentFx(S),
   };
 
