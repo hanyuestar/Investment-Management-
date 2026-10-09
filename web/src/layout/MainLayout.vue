@@ -14,7 +14,7 @@
 
       <div class="logo">
         投资管家
-        <span class="ver">v4.0</span>
+        <span class="ver">v{{ APP_VERSION }}</span>
       </div>
 
       <!-- 桌面端：横向胶囊导航 -->
@@ -65,7 +65,7 @@
         <div class="drawer-head">
           <div class="logo">
             投资管家
-            <span class="ver">v4.0</span>
+            <span class="ver">v{{ APP_VERSION }}</span>
           </div>
           <div class="drawer-user">
             <el-icon><UserFilled /></el-icon>
@@ -131,6 +131,10 @@
 </template>
 
 <script setup>
+
+/** 应用版本号：单一来源 = web/package.json 的 version（构建时由 Vite 内联该 JSON） */
+import pkg from '../../package.json';
+const APP_VERSION = pkg.version;
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {

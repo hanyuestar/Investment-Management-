@@ -1,4 +1,7 @@
-# 投资管家 · 个人投资资产管理系统 v4.0
+# 投资管家 · 个人投资资产管理系统
+
+> 界面顶栏显示的版本号自动取自 `web/package.json` 的 `version`，随发版同步；
+> 历史版本见 [Releases](https://github.com/hanyuestar/Investment-Management-/tags)。
 
 [![License: MIT + Attribution](https://img.shields.io/badge/License-MIT%20%2B%20Attribution-blue.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fhanyuestar%2Finvestment--management-blue?logo=docker)](https://github.com/hanyuestar/Investment-Management-/pkgs/container/investment-management)
