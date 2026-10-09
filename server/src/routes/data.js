@@ -11,27 +11,84 @@ const router = express.Router();
 router.use(authRequired);
 
 /* ---------- 导出 ---------- */
-router.get('/export', (req, res) => {
+/* =========================================================
+ * 备份 payload 公共构造
+ *
+ * ⚠️ 三种 payload 用途不同，**不可简单合并**：
+ *   · 可移植导出（/export）    → 用**显式列名**，是跨设备迁移的稳定契约
+ *   · 完整快照（导入前/示例前） → 用 `SELECT *`，要求列完整以便回滚
+ * 故此处抽为两个单一职责函数，共享表名与列名定义，避免逐处重复又保留语义差异。
+ * ========================================================= */
+
+/** 备份格式标识（**非产品版本**，改动会破坏旧备份导入兼容性，勿随版本变更） */
+const BACKUP_SCHEMA = 'invest-manager/v4';
+
+/** 表名映射：payload 键 → 数据库表名 */
+const BK_TABLES = {
+  accounts: 'account', assets: 'asset', events: 'event', snapshots: 'snapshot',
+  benchmarks: 'benchmark', cashFlows: 'cash_flow', dcaPlans: 'dca_plan',
+};
+
+/** 可移植导出使用的显式列名（改表结构时须同步此处） */
+const BK_PORTABLE_COLS = {
+  accounts: 'id,name,kind,currency,note,created_at',
+  assets: 'id,account_id,name,code,market,type,currency,price,market_value,unit_price,margin_cny,alerts_json,created_at',
+  events: 'id,asset_id,date,kind,side,qty,price,amount,ratio,fee,margin_cny,fx,is_t,note,created_at',
+  snapshots: 'month,total',
+  benchmarks: 'code,date,value',
+  cashFlows: 'id,account_id,date,kind,amount,fx,input_currency,input_amount,note',
+  dcaPlans: 'id,asset_id,start_month,months,day,amount,note,active,created_at',
+};
+
+/** 安全解析用户设置 JSON */
+function readUserSettings(user) {
+  try { return JSON.parse(user.settings_json || '{}'); } catch { return {}; }
+}
+
+/**
+ * 可移植导出 payload（GET /export）。
+ * @param {object} user 请求用户（用于取 settings_json）
+ */
+function buildPortablePayload(user) {
   const db = getDb();
-  const uid = req.user.id;
-  const payload = {
-    schema: 'invest-manager/v4',
+  const uid = user.id;
+  const out = {
+    schema: BACKUP_SCHEMA,               // ⚠️ 格式标识，勿随产品版本变更
     exportedAt: now(),
-    settings: (() => { try { return JSON.parse(req.user.settings_json || '{}'); } catch { return {}; } })(),
+    settings: readUserSettings(user),
     fx: db.prepare('SELECT date,rate,source,note FROM fx_rate ORDER BY date').all(),
-    accounts: db.prepare('SELECT id,name,kind,currency,note,created_at FROM account WHERE user_id=? ORDER BY id').all(uid),
-    assets: db.prepare(`SELECT id,account_id,name,code,market,type,currency,price,market_value,unit_price,margin_cny,alerts_json,created_at
-                        FROM asset WHERE user_id=? ORDER BY id`).all(uid),
-    events: db.prepare(`SELECT id,asset_id,date,kind,side,qty,price,amount,ratio,fee,margin_cny,fx,is_t,note,created_at
-                        FROM event WHERE user_id=? ORDER BY id`).all(uid),
-    snapshots: db.prepare('SELECT month,total FROM snapshot WHERE user_id=? ORDER BY month').all(uid),
-    benchmarks: db.prepare('SELECT code,date,value FROM benchmark WHERE user_id=? ORDER BY date').all(uid),
-    cashFlows: db.prepare('SELECT id,account_id,date,kind,amount,fx,input_currency,input_amount,note FROM cash_flow WHERE user_id=? ORDER BY id').all(uid),
-    dcaPlans: db.prepare(`SELECT id,asset_id,start_month,months,day,amount,note,active,created_at
-                          FROM dca_plan WHERE user_id=? ORDER BY id`).all(uid),
   };
+  for (const [key, table] of Object.entries(BK_TABLES)) {
+    const order = key === 'snapshots' ? ' ORDER BY month' : ' ORDER BY id';
+    out[key] = db.prepare(`SELECT ${BK_PORTABLE_COLS[key]} FROM ${table} WHERE user_id=?${order}`).all(uid);
+  }
+  return out;
+}
+
+/**
+ * 完整快照（用于回滚）：`SELECT *` 取全列。
+ * @param {number} uid 用户 id
+ * @param {string[]} keys 需要快照的 payload 键（默认全部）
+ * @param {boolean} withSettings 是否附带 settings 与 fx（默认 true）
+ */
+function buildFullSnapshot(uid, keys, withSettings = true) {
+  const db = getDb();
+  const out = { schema: BACKUP_SCHEMA, exportedAt: now() };
+  if (withSettings) {
+    const user = db.prepare('SELECT settings_json FROM user WHERE id=?').get(uid);
+    out.settings = readUserSettings(user || {});
+    out.fx = db.prepare('SELECT date,rate,source,note FROM fx_rate ORDER BY date').all();
+  }
+  for (const key of (keys || Object.keys(BK_TABLES))) {
+    out[key] = db.prepare(`SELECT * FROM ${BK_TABLES[key]} WHERE user_id=?`).all(uid);
+  }
+  return out;
+}
+
+router.get('/export', (req, res) => {
+  /* 可移植导出：显式列名 + settings/fx，见 buildPortablePayload */
   res.setHeader('Content-Disposition', `attachment; filename="invest-manager-backup-${new Date().toISOString().slice(0, 10)}.json"`);
-  res.json(payload);
+  res.json(buildPortablePayload(req.user));
 });
 
 /* ---------- 导入 ---------- */
@@ -49,19 +106,8 @@ router.post('/import', asyncHandler(async (req, res) => {
   const db = getDb();
   const uid = req.user.id;
 
-  // 导入前自动备份当前数据（JSON 快照落到 data/backups/）
-  const backupPayload = {
-    schema: 'invest-manager/v4', exportedAt: now(),
-    settings: (() => { try { return JSON.parse(req.user.settings_json || '{}'); } catch { return {}; } })(),
-    fx: db.prepare('SELECT date,rate,source,note FROM fx_rate ORDER BY date').all(),
-    accounts: db.prepare('SELECT id,name,kind,currency,note,created_at FROM account WHERE user_id=?').all(uid),
-    assets: db.prepare('SELECT * FROM asset WHERE user_id=?').all(uid),
-    events: db.prepare('SELECT * FROM event WHERE user_id=?').all(uid),
-    snapshots: db.prepare('SELECT * FROM snapshot WHERE user_id=?').all(uid),
-    benchmarks: db.prepare('SELECT * FROM benchmark WHERE user_id=?').all(uid),
-    cashFlows: db.prepare('SELECT * FROM cash_flow WHERE user_id=?').all(uid),
-    dcaPlans: db.prepare('SELECT * FROM dca_plan WHERE user_id=?').all(uid),
-  };
+  // 导入前自动备份当前数据（完整快照，SELECT * 含全部列，用于回滚）
+  const backupPayload = buildFullSnapshot(uid);
   const backupFile = writeJsonBackup(backupPayload, 'pre-import');
 
   const counts = { accounts: 0, assets: 0, events: 0, fx: 0, snapshots: 0, benchmarks: 0, cashFlows: 0, dcaPlans: 0 };
@@ -140,12 +186,9 @@ router.post('/import', asyncHandler(async (req, res) => {
 /* ---------- 装载示例数据（会先备份） ---------- */
 router.post('/demo', asyncHandler(async (req, res) => {
   const db = getDb();
-  const backupFile = writeJsonBackup({
-    schema: 'invest-manager/v4', exportedAt: now(),
-    accounts: db.prepare('SELECT * FROM account WHERE user_id=?').all(req.user.id),
-    assets: db.prepare('SELECT * FROM asset WHERE user_id=?').all(req.user.id),
-    events: db.prepare('SELECT * FROM event WHERE user_id=?').all(req.user.id),
-  }, 'pre-demo');
+  const backupFile = writeJsonBackup(
+    /* 保持原行为：仅快照示例数据会覆盖的三张表，且不附带 settings/fx */
+    buildFullSnapshot(req.user.id, ['accounts', 'assets', 'events'], false), 'pre-demo');
   loadDemoData(db, req.user.id);
   res.json({ ok: true, backupFile: backupFile.replace(/\\/g, '/').split('/').pop() });
 }));
