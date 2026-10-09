@@ -39,8 +39,10 @@
       <b class="num" :class="signClass(h.calc.rate)">{{ signedPct(h.calc.rate) }}</b>
     </div>
     <div class="ac-row" v-if="h.asset.currency === 'USD'">
-      <span>汇率(锁定成本/当前)</span>
-      <b class="num muted">{{ Number(h.calc.fxUsed || 0).toFixed(4) }} / {{ Number(fxCurrent || 0).toFixed(4) }}</b>
+      <span>汇率(成本 / 当前)</span>
+      <b class="num muted" :title="'成本按建仓日汇率折算，市值按当前汇率折算；两者不同时，浮动盈亏中含汇率变动'">
+        {{ Number(h.calc.fxCost || 0).toFixed(4) }} / {{ Number(fxCurrent || 0).toFixed(4) }}
+      </b>
     </div>
     <div class="ac-row" v-if="accountName"><span>所属账户</span><b>{{ accountName }}</b></div>
 

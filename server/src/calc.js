@@ -237,7 +237,11 @@
       buyQty, buyAmtCNY: round2(buyAmtCNY), buyAmtLocal: round2(buyAmtLocal),
       netInvestCNY: round2(netInvestCNY),
       total: round2(totalCNY),
-      rate: netInvestCNY > 0 ? totalCNY / netInvestCNY : 0, fxUsed: fxNow, byMonth
+      /* fxUsed 为当前汇率（兼容旧字段名）；fxCost 为「当前持仓成本的实际折算汇率」，
+         即 成本(CNY) ÷ 成本(原币)。USD 资产在历史汇率与当前汇率不同时，两者会不等，
+         卡片应展示 fxCost（成本锁定汇率）而非当前汇率。 */
+      rate: netInvestCNY > 0 ? totalCNY / netInvestCNY : 0, fxUsed: fxNow,
+      fxCost: costLocal > 1e-9 ? round2(costCNY / costLocal * 10000) / 10000 : fxNow, byMonth
     };
   }
 
