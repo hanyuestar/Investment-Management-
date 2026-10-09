@@ -497,3 +497,34 @@ test('删除账户级联删除其下资产与事件', async () => {
   const after = (await api('GET', '/api/assets', aliceToken)).json.length;
   assert.ok(after < before);
 });
+
+/* ---------------- 期初建仓汇率（放在文件末尾：会写入历史汇率，避免干扰示例数据断言） ---------------- */
+test('期初建仓：非人民币资产按建仓日汇率折算成本（回归）', async () => {
+  /* 历史缺陷：期初建仓事件的 fx 被硬编码为 1，
+     导致 USD 资产的期初成本被当成 1:1 折算、严重低估（实测 36 会算成 5）。 */
+  const acc = await api('POST', '/api/accounts', adminToken, { name: '期初汇率账户', kind: 'broker', currency: 'USD' });
+  assert.equal(acc.status, 201);
+  const accId = acc.json.id;
+  await api('POST', '/api/fx', adminToken, { date: '2026-01-01', rate: 7.2, note: '期初汇率回归' });
+  const a = await api('POST', '/api/assets', adminToken, {
+    name: '期初汇率回归基金', type: 'fund', currency: 'USD', accountId: accId, unitPrice: 1.2,
+    opening: { qty: 5, costPrice: 1, amount: 5, date: '2026-01-01' },
+  });
+  assert.equal(a.status, 201);
+  const r = await api('GET', `/api/compute?accountId=${accId}`, adminToken);
+  const h = r.json.holdings.find(x => x.asset.id === a.json.id);
+  assert.ok(Math.abs(h.calc.openingCostCNY - 36) < 0.02, `期初成本应为 5 USD × 7.2 = 36，实得 ${h.calc.openingCostCNY}`);
+
+  /* 人民币资产不受影响（fx 恒为 1） */
+  const acc2 = await api('POST', '/api/accounts', adminToken, { name: '期初汇率账户CNY', kind: 'broker', currency: 'CNY' });
+  const a2 = await api('POST', '/api/assets', adminToken, {
+    name: '期初汇率回归基金CNY', type: 'fund', currency: 'CNY', accountId: acc2.json.id, unitPrice: 8,
+    opening: { qty: 10, costPrice: 7.2, amount: 72, date: '2026-01-01' },
+  });
+  const r2 = await api('GET', `/api/compute?accountId=${acc2.json.id}`, adminToken);
+  const h2 = r2.json.holdings.find(x => x.asset.id === a2.json.id);
+  assert.ok(Math.abs(h2.calc.openingCostCNY - 72) < 0.02, `CNY 期初成本应为 72，实得 ${h2.calc.openingCostCNY}`);
+
+  await api('DELETE', `/api/accounts/${accId}`, adminToken);
+  await api('DELETE', `/api/accounts/${acc2.json.id}`, adminToken);
+});

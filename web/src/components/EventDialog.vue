@@ -169,6 +169,11 @@ const computedAmount = computed(() => {
   const v = (+form.qty || 0) * (+form.price || 0);
   return v > 0 ? v.toFixed(2) : '—';
 });
+/** 汇率兜底：优先用已加载组合里的当前汇率，避免写死 */
+function rateFallback() {
+  const r = +((store.kpis || {}).fxCurrent);
+  return isFinite(r) && r > 0 ? r : 7.1;
+}
 const store = usePortfolioStore();
 /** 本次买入/申购的成交总额（资产币种） */
 const grossAmount = computed(() => (+form.qty || 0) * (+form.price || 0));
@@ -229,12 +234,11 @@ async function reset() {
     Object.assign(form, {
       date: todayStr(), side: 'buy', kind: 'invest',
       qty: null, price: null, amount: null, ratio: null,
-      fee: 0, fx: 7.1, isT: 0, note: '',
+      fee: 0, fx: rateFallback(), isT: 0, note: '',
       margin: 0, marginCurrency: 'CNY', incCurrency: props.asset?.currency || 'CNY',
     });
-    if (props.asset.currency === 'USD') {
-      try { const c = await fxApi.current(); form.fx = c.rate; } catch { /* 保留默认 */ }
-    }
+    /* 始终取「接口最新汇率」：除 USD 资产外，融资 / 收益 / 手续费按 USD 录入时也要用 */
+    try { const c = await fxApi.current(); if (c && +c.rate > 0) form.fx = +c.rate; } catch { /* 保留兜底 */ }
   }
 }
 watch(() => props.modelValue, v => { if (v) reset(); }, { immediate: true });

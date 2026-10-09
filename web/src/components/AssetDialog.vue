@@ -82,9 +82,9 @@
         </el-form-item>
       </template>
 
-      <el-form-item label="汇率" v-if="isBroker && form.marginCurrency === 'USD'">
+      <el-form-item label="汇率" v-if="needRate">
         <el-input-number v-model="form.rate" :min="0" :step="0.001" :precision="4" controls-position="right" style="width:180px" />
-        <span class="form-tip" style="margin-left:8px">1 USD = ? CNY，用于把融资金额换算为人民币</span>
+        <span class="form-tip" style="margin-left:8px">1 USD = ? CNY，用于把「融资 / 期初建仓」金额换算为人民币</span>
       </el-form-item>
 
       <!-- 期初建仓（仅创建时可填） -->
@@ -93,18 +93,29 @@
           <span class="form-tip">期初建仓（可选）</span>
         </el-divider>
         <div class="form-tip" style="margin:-6px 0 10px 4px;line-height:1.6">
-          若这个资产在<b>开始记账前就已持有</b>，在这里填当初的份额与成本，
-          系统会据此计算已有盈亏。<b>这笔本金无需再录入金</b>（会自动计入累计投入）。
+          若这个资产在<b>开始记账前就已持有</b>，在这里填当初的份额与成本，系统会据此计算已有盈亏。
+          <br>
+          ⚠️ <b>此处的本金不会自动计入「累计投入」</b>（累计投入只按净入金计算）。
+          请另到「出入金」页补录一笔<b>等额入金</b>，否则系统会提示「期初建仓缺少对应入金」。
+          <br>
+          若这笔仓位是<b>融资买入</b>的，期初成本请填「自付 + 融资」的总额。
         </div>
         <el-form-item label="期初份额">
           <el-input-number v-model="form.openingQty" :min="0" :precision="4" controls-position="right" style="width:180px" />
         </el-form-item>
         <template v-if="form.openingQty > 0">
-          <el-form-item label="期初成本单价">
+          <el-form-item label="录入币种">
+            <el-radio-group v-model="form.openingCurrency">
+              <el-radio-button label="CNY">人民币 CNY</el-radio-button>
+              <el-radio-button label="USD">美元 USD</el-radio-button>
+            </el-radio-group>
+            <span class="form-tip" style="margin-left:8px">按此币种填写下方的单价与本金</span>
+          </el-form-item>
+          <el-form-item :label="`期初成本单价(${form.openingCurrency})`">
             <el-input-number v-model="form.openingCostPrice" :min="0" :precision="6" controls-position="right" style="width:180px" />
             <span class="form-tip" style="margin-left:8px">与下方本金二选一</span>
           </el-form-item>
-          <el-form-item label="期初投入本金">
+          <el-form-item :label="`期初投入本金(${form.openingCurrency})`">
             <el-input-number v-model="form.openingAmount" :min="0" :precision="2" controls-position="right" style="width:180px" />
             <span class="form-tip" style="margin-left:8px">留空则由「份额 × 成本单价」推算</span>
           </el-form-item>
@@ -113,7 +124,9 @@
               placeholder="选择日期" style="width:180px" />
           </el-form-item>
           <el-form-item label=" ">
-            <span class="form-tip">期初成本合计：{{ openingCostText }} ｜ 按当前净值市值：{{ openingMvText }}</span>
+            <span class="form-tip">期初成本合计：¥{{ openingCostText }} ｜ 按当前净值市值：¥{{ openingMvText }}（均为人民币）
+              <template v-if="openingRateNeeded && !(+form.rate > 0)">　⚠️ 请先填写汇率</template>
+            </span>
           </el-form-item>
         </template>
       </template>
@@ -128,7 +141,7 @@
 <script setup>
 import { reactive, ref, watch, computed } from 'vue';
 import { ElMessage } from 'element-plus';
-import { assetsApi } from '../api';
+import { assetsApi, fxApi } from '../api';
 import { ACCOUNT_KIND_LABEL } from '../utils/format';
 import { ccyName } from '../utils/format';
 import { usePortfolioStore } from '../stores/portfolio';
@@ -176,17 +189,62 @@ const effectiveUnit = computed(() => {
 });
 
 const openingQty = computed(() => +form.openingQty || 0);
+/** 是否需要汇率输入：融资按 USD，或期初建仓录入币种 ≠ 资产币种 */
+const needRate = computed(() =>
+  (isBroker.value && form.marginCurrency === 'USD')
+  || (openingRateNeeded.value));
+/**
+ * 汇率取值策略（避免写死）：
+ *  1) 先用已加载的组合数据里的当前汇率（同步，避免界面闪现占位值）
+ *  2) 再向「获取最新汇率」接口取一次权威值
+ *  3) 接口失败时保留上一步的值，最终兜底 7.1
+ */
+function currentRateFallback() {
+  const k = store.kpis || {};
+  const r = +k.fxCurrent;
+  return isFinite(r) && r > 0 ? r : 7.1;
+}
+async function loadCurrentRate() {
+  const r = currentRateFallback();
+  form.rate = r;
+  try {
+    const c = await fxApi.current();
+    if (c && isFinite(+c.rate) && +c.rate > 0) form.rate = +c.rate;
+  } catch { /* 保留兜底值 */ }
+}
+
+/** 期初建仓：录入币种与资产币种不同时才需换算 */
+const openingRateNeeded = computed(() =>
+  ['CNY', 'USD'].includes(form.openingCurrency) && form.openingCurrency !== form.currency);
+/** 把「期初录入值」从录入币种换算为「资产币种」；缺汇率时返回 null */
+function openingToAsset(v) {
+  const val = +v || 0;
+  if (!(val > 0)) return 0;
+  if (!openingRateNeeded.value) return val;
+  const r = +form.rate || 0;
+  if (!(r > 0)) return null;
+  return form.currency === 'CNY' ? val * r : val / r;   // USD→CNY 乘；CNY→USD 除
+}
+/** 资产币种 → 人民币 的折算率 */
+const assetCnyRate = computed(() => (form.currency === 'USD' ? (+form.rate || 0) : 1));
+
+/** 期初成本单价（资产币种） */
 const openingUnit = computed(() => {
-  if (+form.openingCostPrice > 0) return +form.openingCostPrice;
-  if (+form.openingAmount > 0 && openingQty.value > 0) return +form.openingAmount / openingQty.value;
+  if (+form.openingCostPrice > 0) { const v = openingToAsset(form.openingCostPrice); return v == null ? 0 : v; }
+  if (+form.openingAmount > 0 && openingQty.value > 0) {
+    const amt = openingToAsset(form.openingAmount);
+    return amt == null ? 0 : amt / openingQty.value;
+  }
   return 0;
 });
+/** 期初成本合计（人民币） */
 const openingCostText = computed(() => {
-  const c = openingQty.value * openingUnit.value;
+  const r = assetCnyRate.value;
+  const c = openingQty.value * openingUnit.value * r;
   return c > 0 ? c.toFixed(2) : '—';
 });
 const openingMvText = computed(() => {
-  const mv = openingQty.value * effectiveUnit.value;
+  const mv = openingQty.value * effectiveUnit.value * assetCnyRate.value;
   return mv > 0 ? mv.toFixed(2) : '—';
 });
 
@@ -199,8 +257,9 @@ function reset() {
       unitValue: props.asset.type === 'stock' ? props.asset.price : props.asset.unitPrice,
       totalValue: null,
       accountId: props.asset.accountId,
-      margin: props.asset.marginCNY || 0, marginCurrency: 'CNY', rate: 7.1,
+      margin: props.asset.marginCNY || 0, marginCurrency: 'CNY', rate: currentRateFallback(),
       openingQty: 0, openingCostPrice: null, openingAmount: null, openingDate: '',
+      openingCurrency: 'CNY',
     });
   } else {
     const today = new Date().toISOString().slice(0, 10);
@@ -208,12 +267,13 @@ function reset() {
       name: '', code: '', accountId: props.accounts[0]?.id || '', type: 'stock',
       market: 'CN', currency: 'CNY',
       valueMode: 'unit', unitValue: 0, totalValue: null,
-      margin: 0, marginCurrency: 'CNY', rate: 7.1,
+      margin: 0, marginCurrency: 'CNY', rate: currentRateFallback(),
       openingQty: 0, openingCostPrice: null, openingAmount: null, openingDate: today,
+      openingCurrency: form.currency || 'CNY',
     });
   }
 }
-watch(() => props.modelValue, v => { if (v) reset(); });
+watch(() => props.modelValue, v => { if (v) { reset(); loadCurrentRate(); } });
 watch(() => form.type, t => {
   if (t === 'stock') form.currency = form.market === 'US' ? 'USD' : 'CNY';
   else form.currency = form.currency || 'CNY';
@@ -235,8 +295,16 @@ function valueHint() {
 function buildOpening() {
   if (!(openingQty.value > 0)) return null;
   const o = { qty: openingQty.value };
-  if (+form.openingCostPrice > 0) o.costPrice = +form.openingCostPrice;
-  if (+form.openingAmount > 0) o.amount = +form.openingAmount;
+  if (+form.openingCostPrice > 0) {
+    const v = openingToAsset(form.openingCostPrice);   // 按录入币种换算为资产币种
+    if (v == null) return null;
+    o.costPrice = +v.toFixed(6);
+  }
+  if (+form.openingAmount > 0) {
+    const v = openingToAsset(form.openingAmount);
+    if (v == null) return null;
+    o.amount = +v.toFixed(2);
+  }
   if (!o.costPrice && !o.amount) return null;          // 两者都没填则视为未填写
   if (form.openingDate) o.date = form.openingDate;
   return o;
@@ -280,6 +348,9 @@ async function save() {
           if (!(r > 0)) return ElMessage.warning('按 USD 录入融资金额时请填写有效汇率');
           payload.marginFx = r;
         }
+      }
+      if (openingQty.value > 0 && openingRateNeeded.value && !(+form.rate > 0)) {
+        return ElMessage.warning('期初建仓按 ' + form.openingCurrency + ' 录入时，请填写有效汇率');
       }
       const opening = buildOpening();
       if (openingQty.value > 0 && !opening) {

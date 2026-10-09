@@ -132,11 +132,16 @@ router.post('/', asyncHandler(async (req, res) => {
       null, now());
 
   if (opening) {
+    /* 期初建仓的汇率必须按「建仓日期」取资产币种→CNY 的实际汇率，
+       此前硬编码为 1，会让非人民币资产的期初成本被当成 1:1 折算、严重低估。 */
+    const openFx = currency === 'CNY' ? 1 : currentFx(opening.date);
+    const fxSafe = (isFinite(openFx) && openFx > 0) ? openFx : 1;
     getDb().prepare(`INSERT INTO event
       (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
-      VALUES (?,?,?,?,?,?,?,?,NULL,0,1,0,?,?)`)
+      VALUES (?,?,?,?,?,?,?,?,NULL,0,?,0,?,?)`)
       .run(req.user.id, info.lastInsertRowid, opening.date, 'opening', null,
-        opening.qty, opening.price, opening.amount, '期初建仓（录入资产时填写）', now());
+        opening.qty, opening.price, opening.amount, fxSafe,
+        '期初建仓（录入资产时填写）', now());
   }
   res.status(201).json(mapRow(ownedRow(getDb(), 'asset', info.lastInsertRowid, req.user.id)));
 }));
