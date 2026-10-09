@@ -23,6 +23,14 @@
     <div class="ac-row"><span>成本 (CNY)</span><b class="num">¥{{ money(h.calc.costCNY) }}</b></div>
     <div class="ac-row"><span>已实现</span><b class="num" :class="signClass(h.calc.realCNY)">{{ signedMoney(h.calc.realCNY) }}</b></div>
     <div class="ac-row"><span>浮动盈亏</span><b class="num" :class="signClass(h.calc.unrealCNY)">{{ signedMoney(h.calc.unrealCNY) }}</b></div>
+    <div class="ac-row ac-sub" v-if="h.calc.qty > 0">
+      <span>├ 股价损益 <i class="ac-hint">仅价格变动</i></span>
+      <b class="num" :class="signClass(h.calc.pricePnlCNY)">{{ signedMoney(h.calc.pricePnlCNY) }}</b>
+    </div>
+    <div class="ac-row ac-sub" v-if="h.calc.qty > 0">
+      <span>└ 汇率损益 <i class="ac-hint">仅汇率变动</i></span>
+      <b class="num" :class="signClass(h.calc.fxPnlCNY)">{{ signedMoney(h.calc.fxPnlCNY) }}</b>
+    </div>
     <div class="ac-row"><span>总收益</span><b class="num" :class="signClass(h.calc.totalCNY)">{{ signedMoney(h.calc.totalCNY) }}</b></div>
     <div class="ac-row" v-if="h.calc.feeTotalCNY > 0">
       <span>累计手续费</span><b class="num">¥{{ money(h.calc.feeTotalCNY) }}</b>

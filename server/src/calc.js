@@ -206,6 +206,14 @@
     const mvCNY = mvLocal * cnyRate;
     const unrealCNY = mvCNY - costCNY;
     const totalCNY = realCNY + divCNY + incomeCNY + unrealCNY;
+    /* 浮动盈亏的来源拆分（仅展示用，不改变任何既有口径）：
+         股价损益 = (当前单价 − 成本单价) × 份额 × 当前汇率
+         汇率损益 = 浮动盈亏 − 股价损益（取残差，保证与浮动盈亏恒等，无分位误差）
+       推导： (P₁−P₀)Q·fx₁ + P₀Q(fx₁−fx₀) = P₁Q·fx₁ − P₀Q·fx₀ = 市值 − 成本 = 浮动盈亏 ✔ */
+    const avgLocal = qty > 0 ? costLocal / qty : 0;
+    const pricePnlCNY = round2((unitPx - avgLocal) * qty * cnyRate);
+    const fxPnlCNY = round2(unrealCNY - pricePnlCNY);
+
     /* 融资与净值：融资余额要原样还给券商，故「实际净值 = 市值 − 融资余额」；
        自付本金 = 持仓成本 − 融资余额。
        校验：(mv − margin) − (cost − margin) = mv − cost = 浮动 ✔ 口径自洽 */
@@ -228,6 +236,7 @@
       feeTotalLocal: round2(feeTotalLocal), feeTotalCNY: round2(feeTotalCNY),
       marginBorrowedCNY: round2(marginBorrowedCNY), marginRepaidCNY: round2(marginRepaidCNY),
       marginCNY, netValueCNY, selfCostCNY,
+      pricePnlCNY, fxPnlCNY,                // 浮动盈亏的来源拆分（和 = unrealCNY）
       divCNY: round2(divCNY), divLocal: round2(divLocal),
       incomeCNY: round2(incomeCNY),
       investCNY: round2(investCNY), redeemCNY: round2(redeemCNY), sellCNY: round2(sellProceedsCNY),
