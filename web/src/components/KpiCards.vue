@@ -25,13 +25,17 @@
     </div>
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">TWR 时间加权</div>
-      <div class="val num" :class="signClass(k.twr)">{{ k.twr == null ? '—' : signedPct(k.twr) }}</div>
-      <div class="sub">剔除资金进出影响</div>
+      <div class="val num" :class="signClass(k.twr)" :title="k.twr == null ? '需要至少 2 个月的月末快照才能计算（数据页可补录；每月最后一天会自动记录）' : ''">
+        {{ k.twr == null ? '—' : signedPct(k.twr) }}
+      </div>
+      <div class="sub">{{ k.twr == null ? '需 ≥2 个月末快照' : '剔除资金进出影响' }}</div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">基准 α ({{ k.benchmarkCode || 'CSI300' }})</div>
-      <div class="val num" :class="signClass(k.alpha)">{{ k.alpha == null ? '—' : signedPct(k.alpha) }}</div>
-      <div class="sub">组合 TWR − 基准涨跌</div>
+      <div class="val num" :class="signClass(k.alpha)" :title="k.alpha == null ? '需要「≥2 个月末快照」+「≥2 条基准点位」才能计算（数据页可补录快照、一键同步基准点位）' : ''">
+        {{ k.alpha == null ? '—' : signedPct(k.alpha) }}
+      </div>
+      <div class="sub">{{ k.alpha == null ? '需快照 + 基准点位' : '组合 TWR − 基准涨跌' }}</div>
     </div>
     <div class="kpi" :class="{ flash: flashing }">
       <div class="label">本年收益 ({{ yearLabel }})</div>

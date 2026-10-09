@@ -10,6 +10,10 @@
     <div class="grid-sidebar">
       <div class="card">
         <h3>月末快照（TWR / 基准曲线 / 含浮动收益的输入）</h3>
+        <p class="form-tip" style="margin:0 0 6px">
+          💡 补录<b>至少 2 个月</b>的月末持仓市值后，「TWR 时间加权」与「基准 α」才会出数
+          （每月最后一天 23:50 会自动记录，无需手工维护）。
+        </p>
         <div class="sub">填<b>月末持仓市值</b>（<b>不含账户现金与融资</b>）：月度浮动收益 = 快照差 − 当月证券净投入（买卖/申赎）。快照口径与首页「持仓市值」一致，均不含账户现金。</div>
         <div class="toolbar">
           <el-date-picker v-model="snap.month" type="month" value-format="YYYY-MM" placeholder="月份" size="small" style="width:130px" />
