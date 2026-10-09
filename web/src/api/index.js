@@ -57,27 +57,23 @@ export const authApi = {
   sendCode: (email) => api.post('/api/auth/send-code', { email }),
   me: () => api.get('/api/auth/me'),
   logout: () => api.post('/api/auth/logout'),
-  getSettings: () => api.get('/api/auth/settings'),
   putSettings: (patch) => api.put('/api/auth/settings', patch),
   changePassword: (oldPassword, newPassword) => api.put('/api/auth/password', { oldPassword, newPassword }),
 };
 
 /* ---------- 基础数据 ---------- */
 export const accountsApi = {
-  list: () => api.get('/api/accounts'),
   create: (b) => api.post('/api/accounts', b),
   update: (id, b) => api.put(`/api/accounts/${id}`, b),
   remove: (id) => api.del(`/api/accounts/${id}`),
 };
 export const assetsApi = {
-  list: () => api.get('/api/assets'),
   create: (b) => api.post('/api/assets', b),
   update: (id, b) => api.put(`/api/assets/${id}`, b),
   setAlerts: (id, alerts) => api.put(`/api/assets/${id}/alerts`, { alerts }),
   remove: (id) => api.del(`/api/assets/${id}`),
 };
 export const eventsApi = {
-  list: (params = '') => api.get(`/api/events${params}`),
   create: (b) => api.post('/api/events', b),
   update: (id, b) => api.put(`/api/events/${id}`, b),
   remove: (id) => api.del(`/api/events/${id}`),
@@ -90,7 +86,6 @@ export const fxApi = {
   remove: (id) => api.del(`/api/fx/${id}`),
 };
 export const snapshotsApi = {
-  list: () => api.get('/api/snapshots'),
   save: (b) => api.post('/api/snapshots', b),
   remove: (month) => api.del(`/api/snapshots/${month}`),
 };
@@ -99,16 +94,13 @@ export const benchmarksApi = {
   save: (b) => api.post('/api/benchmarks', b),
   remove: (id) => api.del(`/api/benchmarks/${id}`),
   /* 自动同步：补齐历史月末点位（仅管理员；只写已结束的月份，幂等不覆盖手工值） */
-  indices: () => api.get('/api/benchmarks/indices'),
   sync: (b = {}) => api.post('/api/benchmarks/sync', b),
 };
 export const cashflowsApi = {
-  list: (params = '') => api.get(`/api/cashflows${params}`),
   create: (b) => api.post('/api/cashflows', b),
   remove: (id) => api.del(`/api/cashflows/${id}`),
 };
 export const dcaApi = {
-  list: () => api.get('/api/dca-plans'),
   create: (b) => api.post('/api/dca-plans', b),
   update: (id, b) => api.put(`/api/dca-plans/${id}`, b),
   remove: (id) => api.del(`/api/dca-plans/${id}`),
@@ -120,8 +112,6 @@ export const alertsApi = {
 export const computeApi = {
   state: () => api.get('/api/state'),
   compute: (accountId = '') => api.get(`/api/compute${accountId ? `?accountId=${accountId}` : ''}`),
-  monthly: (year) => api.get(`/api/reports/monthly${year ? `?year=${year}` : ''}`),
-  yearly: () => api.get('/api/reports/yearly'),
 };
 export const dataApi = {
   exportUrl: '/api/export',

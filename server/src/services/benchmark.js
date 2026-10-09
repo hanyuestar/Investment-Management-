@@ -27,7 +27,6 @@ const INDICES = {
 };
 
 const DEFAULT_CODE = 'CSI300';
-const SOURCE = 'sina';
 const URL_BASE = 'https://money.finance.sina.com.cn/quotes_service/api/json_v2.php/CN_MarketData.getKLineData';
 
 function indexList() {
@@ -171,7 +170,7 @@ async function syncAllUsersAllIndices() {
 }
 
 module.exports = {
-  INDICES, DEFAULT_CODE, SOURCE,
+  INDICES, DEFAULT_CODE,
   indexList, isSupported, parseSinaKline, monthEndCloses, monthFinished,
   fetchMonthEnds, syncBenchmark, syncAllUsersAllIndices,
 };

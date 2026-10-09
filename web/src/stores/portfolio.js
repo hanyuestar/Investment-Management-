@@ -31,8 +31,6 @@ export const usePortfolioStore = defineStore('portfolio', {
   getters: {
     ready: (s) => !!s.d,
     kpis: (s) => s.d?.kpis || {},
-    /** 全部一致性告警（含已忽略） */
-    allWarnings: (s) => s.d?.warnings || [],
     /** 需展示的告警（已忽略的不显示） */
     warnings: (s) => (s.d?.warnings || []).filter(w => !s.dismissedWarnings.includes(w.code)),
     // 引擎返回 {asset, calc:{...}, mvCNY, profitCNY}，这里把 calc 摊平，便于组件直接取 h.qty / h.avgLocal 等
@@ -44,7 +42,6 @@ export const usePortfolioStore = defineStore('portfolio', {
       feeTotal: r.feeTotal || 0,        // 累计手续费
       netDeposit: r.netDeposit || 0,
     })),
-    accountsTotal: (s) => s.d?.accounts?.total || null,
     benchmark: (s) => s.d?.benchmark || null,
     // 以下各段均由 /api/compute 一次性返回
     performance: (s) => s.d?.performance || {},
@@ -67,7 +64,6 @@ export const usePortfolioStore = defineStore('portfolio', {
       return a ? a.name : '—';
     },
     assetById: (s) => (id) => s.raw.assets.find(a => a.id === String(id)),
-    eventsOfAsset: (s) => (id) => s.raw.events.filter(e => e.assetId === String(id)),
   },
   actions: {
     /** 忽略某条告警（持久化） */
@@ -110,12 +106,6 @@ export const usePortfolioStore = defineStore('portfolio', {
       const computed = await computeApi.compute(this.selectedAccount);
       this.d = computed;
       this.flash();
-    },
-    /** 变更后统一调用：刷新并闪烁 */
-    async mutate(fn) {
-      const r = await fn();
-      await this.refreshAll();
-      return r;
     },
   },
 });

@@ -877,9 +877,12 @@
     return out;
   }
 
-  return { DEFAULTS, TAX_DEFAULT, ALLOC_DEFAULT, TODAY, currentFx, assetFx, eventsOf, actionOf, unitPriceOf,
-    calcAsset, assetTotal, accountCash, cashFlowSummary, marginBalanceAt, costBasisAt,
-    accountSummary, securityAggregation, summary, realizedByMonth, netDepositByMonth, netInvestByMonth, monthRows, yearRows,
+  /* 导出面：仅保留被 routes / services / tests 实际消费的符号；
+     DEFAULTS / assetFx / eventsOf / actionOf / unitPriceOf / assetTotal /
+     netDepositByMonth / netInvestByMonth 为内部实现细节，不再对外导出（实现仍在，行为不变） */
+  return { TAX_DEFAULT, ALLOC_DEFAULT, TODAY, currentFx,
+    calcAsset, accountCash, cashFlowSummary, marginBalanceAt, costBasisAt,
+    accountSummary, securityAggregation, summary, realizedByMonth, monthRows, yearRows,
     xirr, portfolioFlows, portfolioXirr, annualized, holdingDays, twr, allocation, concentration, benchmark,
     realizedGainsByYear, taxEstimate, dcaGenerate, checkAlerts };
 });
