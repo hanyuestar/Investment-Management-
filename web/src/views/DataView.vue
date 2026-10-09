@@ -87,6 +87,7 @@ import { usePortfolioStore } from '../stores/portfolio';
 import { useAuthStore } from '../stores/auth';
 import { snapshotsApi, benchmarksApi, dataApi, getToken } from '../api';
 import { money, currentMonth } from '../utils/format';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const store = usePortfolioStore();
 const snap = reactive({ month: currentMonth(), total: null });
@@ -127,12 +128,14 @@ async function saveBench() {
   await loadBench();
   await store.refreshAll();
 }
+const confirmRemove = useRemoveConfirm();
 async function delBench(row) {
-  try { await ElMessageBox.confirm(`删除 ${row.date} 基准点位？`, '确认', { type: 'warning' }); } catch { return; }
-  await benchmarksApi.remove(row.id);
-  ElMessage.success('已删除');
-  await loadBench();
-  await store.refreshAll();
+  /* 删除确认统一走 useRemoveConfirm；基准列表为本页私有数据，刷新前先重载 */
+  await confirmRemove({
+    text: `删除 ${row.date} 基准点位？`,
+    request: () => benchmarksApi.remove(row.id),
+    beforeRefresh: loadBench,
+  });
 }
 
 function fillCurrent() {
@@ -146,10 +149,11 @@ async function saveSnap() {
   await store.refreshAll();
 }
 async function delSnap(row) {
-  try { await ElMessageBox.confirm(`删除 ${row.month} 快照？`, '确认', { type: 'warning' }); } catch { return; }
-  await snapshotsApi.remove(row.month);
-  ElMessage.success('已删除');
-  await store.refreshAll();
+  /* 删除确认统一走 useRemoveConfirm（确认弹窗 → 接口 → 提示 → 刷新） */
+  await confirmRemove({
+    text: `删除 ${row.month} 快照？`,
+    request: () => snapshotsApi.remove(row.month),
+  });
 }
 
 async function doExport() {

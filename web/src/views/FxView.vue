@@ -58,12 +58,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { useAuthStore } from '../stores/auth';
 import { usePortfolioStore } from '../stores/portfolio';
 import { fxApi } from '../api';
 import { FX_SOURCE_LABEL } from '../utils/format';
 import OpsDialogs from '../components/OpsDialogs.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const auth = useAuthStore();
 const store = usePortfolioStore();
@@ -102,13 +103,14 @@ async function sync() {
     await store.refreshAll(false);
   } catch (e) { ElMessage.error(e.message); } finally { syncing.value = false; }
 }
+const confirmRemove = useRemoveConfirm();
 async function remove(row) {
-  try {
-    await ElMessageBox.confirm(`确定删除 ${row.date} 的手动汇率？`, '删除确认', { type: 'warning' });
-  } catch { return; }
-  await fxApi.remove(row.id);
-  ElMessage.success('已删除');
-  await loadFx();
-  await store.refreshAll(false);
+  /* 删除确认统一走 useRemoveConfirm；汇率列表为本页私有数据，刷新前先重载 */
+  await confirmRemove({
+    text: `确定删除 ${row.date} 的手动汇率？`,
+    request: () => fxApi.remove(row.id),
+    beforeRefresh: loadFx,
+    animate: false,          // 与本页其它写操作一致，不触发 KPI 闪烁
+  });
 }
 </script>

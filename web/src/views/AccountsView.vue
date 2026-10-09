@@ -66,11 +66,11 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { ElMessageBox, ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { accountsApi } from '../api';
 import { money, signedMoney, signedPct, signClass, ACCOUNT_KIND_LABEL } from '../utils/format';
 import OpsDialogs from '../components/OpsDialogs.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const store = usePortfolioStore();
 const ops = ref(null);
@@ -97,17 +97,14 @@ const total = computed(() => rows.value.reduce((s, a) => ({
 
 function kindLabel(k) { return ACCOUNT_KIND_LABEL[k] || k; }
 
+const confirmRemove = useRemoveConfirm();
 async function remove(a) {
-  try {
-    await ElMessageBox.confirm(`确定删除账户「${a.name}」？账户下资产与流水将一并删除。`, '删除确认', {
-      type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消',
-    });
-  } catch { return; }
-  try {
-    await accountsApi.remove(a.id);
-    ElMessage.success('已删除');
-    if (store.selectedAccount === a.id) await store.setAccount('');
-    await store.refreshAll();
-  } catch (e) { ElMessage.error(e.message); }
+  /* 删除确认统一走 useRemoveConfirm（确认弹窗 → 接口 → 提示 → 刷新） */
+  await confirmRemove({
+    text: `确定删除账户「${a.name}」？账户下资产与流水将一并删除。`,
+    request: () => accountsApi.remove(a.id),
+    /* 删除的是当前选中的账户视角时，先切回「全部账户」再刷新 */
+    beforeRefresh: async () => { if (store.selectedAccount === a.id) await store.setAccount(''); },
+  });
 }
 </script>

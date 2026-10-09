@@ -136,6 +136,7 @@ import { useAuthStore } from '../stores/auth';
 import { usePortfolioStore } from '../stores/portfolio';
 import { adminApi, fxApi } from '../api';
 import FxDialog from '../components/FxDialog.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const auth = useAuthStore();
 const store = usePortfolioStore();
@@ -191,12 +192,15 @@ async function syncFx() {
     await loadStats();
   } catch (e) { ElMessage.error(e.message); } finally { fxSyncing.value = false; }
 }
+const confirmRemove = useRemoveConfirm();
 async function delFx(row) {
-  try { await ElMessageBox.confirm(`删除 ${row.date} 手动汇率？`, '确认', { type: 'warning' }); } catch { return; }
-  await fxApi.remove(row.id);
-  ElMessage.success('已删除');
-  await loadFx();
-  await store.refreshAll(false);
+  /* 删除确认统一走 useRemoveConfirm；汇率列表为本页私有数据，刷新前先重载 */
+  await confirmRemove({
+    text: `删除 ${row.date} 手动汇率？`,
+    request: () => fxApi.remove(row.id),
+    beforeRefresh: loadFx,
+    animate: false,          // 与本页其它写操作一致，不触发 KPI 闪烁
+  });
 }
 
 /* 邮箱 */

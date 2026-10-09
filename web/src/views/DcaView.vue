@@ -72,11 +72,12 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { dcaApi } from '../api';
 import { money } from '../utils/format';
 import OpsDialogs from '../components/OpsDialogs.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const store = usePortfolioStore();
 const ops = ref(null);
@@ -96,13 +97,13 @@ async function toggle(row, v) {
   ElMessage.success(v ? '计划已启用' : '计划已暂停');
   await store.refreshAll();
 }
+const confirmRemove = useRemoveConfirm();
 async function remove(row) {
-  try {
-    await ElMessageBox.confirm(`确定删除「${assetName(row.assetId)}」定投计划？已生成的投入记录不会删除。`, '删除确认', { type: 'warning' });
-  } catch { return; }
-  await dcaApi.remove(row.id);
-  ElMessage.success('已删除');
-  await store.refreshAll();
+  /* 删除确认统一走 useRemoveConfirm（确认弹窗 → 接口 → 提示 → 刷新） */
+  await confirmRemove({
+    text: `确定删除「${assetName(row.assetId)}」定投计划？已生成的投入记录不会删除。`,
+    request: () => dcaApi.remove(row.id),
+  });
 }
 
 const editDlg = ref(false);

@@ -13,6 +13,7 @@ import { usePortfolioStore } from '../stores/portfolio';
  * @param {string}  [o.successText]  成功提示（默认「已删除」）
  * @param {Function}[o.beforeRefresh] 刷新前的钩子，如清理当前选中项
  * @param {boolean} [o.refresh]      是否全量刷新（默认 true）
+ * @param {boolean} [o.animate]      全量刷新是否触发 KPI 闪烁（默认 true）
  * @returns {Promise<boolean>} 是否真正删除成功（取消返回 false）
  *
  * @example
@@ -22,7 +23,9 @@ import { usePortfolioStore } from '../stores/portfolio';
 export function useRemoveConfirm() {
   const store = usePortfolioStore();
 
-  return async function confirmRemove({ text, request, successText = '已删除', beforeRefresh, refresh = true }) {
+  return async function confirmRemove({
+    text, request, successText = '已删除', beforeRefresh, refresh = true, animate = true,
+  }) {
     try {
       await ElMessageBox.confirm(text, '删除确认', {
         type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消',
@@ -34,7 +37,7 @@ export function useRemoveConfirm() {
       await request();
       ElMessage.success(successText);
       if (beforeRefresh) await beforeRefresh();
-      if (refresh) await store.refreshAll();
+      if (refresh) await store.refreshAll(animate);
       return true;
     } catch (e) {
       ElMessage.error(e?.message || '删除失败');

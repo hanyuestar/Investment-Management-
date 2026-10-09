@@ -89,13 +89,13 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { ElMessageBox, ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { assetsApi } from '../api';
 import { money, signedMoney, signedPct, pct, signClass, TYPE_LABEL, TYPE_COLORS, ACCOUNT_KIND_LABEL } from '../utils/format';
 import AssetCard from '../components/AssetCard.vue';
 import EChart from '../components/EChart.vue';
 import OpsDialogs from '../components/OpsDialogs.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const store = usePortfolioStore();
 const ops = ref(null);
@@ -139,16 +139,12 @@ function shareOf(mv) {
   return total > 0 ? mv / total : 0;
 }
 
+const confirmRemove = useRemoveConfirm();
 async function removeAsset(asset) {
-  try {
-    await ElMessageBox.confirm(`确定删除资产「${asset.name}」？其全部流水将一并删除，不可恢复。`, '删除确认', {
-      type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消',
-    });
-  } catch { return; }
-  try {
-    await assetsApi.remove(asset.id);
-    ElMessage.success('已删除');
-    await store.refreshAll();
-  } catch (e) { ElMessage.error(e.message); }
+  /* 删除确认统一走 useRemoveConfirm（确认弹窗 → 接口 → 提示 → 刷新） */
+  await confirmRemove({
+    text: `确定删除资产「${asset.name}」？其全部流水将一并删除，不可恢复。`,
+    request: () => assetsApi.remove(asset.id),
+  });
 }
 </script>

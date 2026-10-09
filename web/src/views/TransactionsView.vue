@@ -137,11 +137,12 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { ElMessageBox, ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { eventsApi } from '../api';
 import { money, EVENT_LABEL, TYPE_LABEL, ccyName } from '../utils/format';
 import EventDialog from '../components/EventDialog.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const store = usePortfolioStore();
 const assetFilter = ref('');
@@ -210,16 +211,14 @@ async function afterChange() {
   eventDlg.value = false;
   await store.refreshAll();
 }
+const confirmRemove = useRemoveConfirm();
 async function remove(row) {
   const a = assetOf(row.assetId);
-  try {
-    await ElMessageBox.confirm(`确定删除 ${row.date}「${a?.name || ''}」的${EVENT_LABEL[row.kind]}记录？`, '删除确认', {
-      type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消',
-    });
-  } catch { return; }
-  await eventsApi.remove(row.id);
-  ElMessage.success('已删除');
-  await store.refreshAll();
+  /* 删除确认统一走 useRemoveConfirm（确认弹窗 → 接口 → 提示 → 刷新） */
+  await confirmRemove({
+    text: `确定删除 ${row.date}「${a?.name || ''}」的${EVENT_LABEL[row.kind]}记录？`,
+    request: () => eventsApi.remove(row.id),
+  });
 }
 </script>
 

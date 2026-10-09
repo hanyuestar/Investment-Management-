@@ -77,7 +77,6 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { cashflowsApi } from '../api';
 import { money } from '../utils/format';
