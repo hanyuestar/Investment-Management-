@@ -47,9 +47,10 @@ const saving = ref(false);
 const flowAssets = computed(() => props.assets.filter(a => a.type !== 'stock'));
 const form = reactive({ assetId: '', startMonth: currentMonth(), months: 12, day: 15, amount: null, note: '定投' });
 
+/* immediate：配合 v-if 懒挂载（v=false 时无副作用） */
 watch(() => props.modelValue, v => {
   if (v) Object.assign(form, { assetId: flowAssets.value[0]?.id || '', startMonth: currentMonth(), months: 12, day: 15, amount: null, note: '定投' });
-});
+}, { immediate: true });
 
 async function save() {
   if (!form.assetId) return ElMessage.warning('请选择定投标的');

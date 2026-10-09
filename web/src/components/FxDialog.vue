@@ -32,9 +32,10 @@ const props = defineProps({ modelValue: Boolean });
 const emit = defineEmits(['update:modelValue', 'saved']);
 const saving = ref(false);
 const form = reactive({ date: todayStr(), rate: 7.1, note: '' });
+/* immediate：配合 v-if 懒挂载（v=false 时无副作用） */
 watch(() => props.modelValue, v => {
   if (v) Object.assign(form, { date: todayStr(), rate: 7.1, note: '' });
-});
+}, { immediate: true });
 async function save() {
   if (!(form.rate > 0)) return ElMessage.warning('汇率需大于 0');
   saving.value = true;

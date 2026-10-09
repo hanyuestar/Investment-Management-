@@ -43,11 +43,12 @@ const isEdit = computed(() => !!props.account);
 const saving = ref(false);
 const form = reactive({ name: '', kind: 'broker', currency: 'CNY', note: '' });
 
+/* immediate：配合 v-if 懒挂载（v=false 时直接 return，无副作用） */
 watch(() => props.modelValue, v => {
   if (!v) return;
   if (props.account) Object.assign(form, { name: props.account.name, kind: props.account.kind, currency: props.account.currency, note: props.account.note || '' });
   else Object.assign(form, { name: '', kind: 'broker', currency: 'CNY', note: '' });
-});
+}, { immediate: true });
 
 async function save() {
   if (!form.name.trim()) return ElMessage.warning('请填写账户名称');

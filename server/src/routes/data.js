@@ -186,9 +186,9 @@ router.post('/import', asyncHandler(async (req, res) => {
 /* ---------- 装载示例数据（会先备份） ---------- */
 router.post('/demo', asyncHandler(async (req, res) => {
   const db = getDb();
-  const backupFile = writeJsonBackup(
-    /* 保持原行为：仅快照示例数据会覆盖的三张表，且不附带 settings/fx */
-    buildFullSnapshot(req.user.id, ['accounts', 'assets', 'events'], false), 'pre-demo');
+  /* 示例数据会写入 accounts/assets/events/cash_flow/snapshot/benchmark/dca_plan，
+     故前置备份必须是**完整快照**（全表 + settings/fx），否则回滚会丢数据。 */
+  const backupFile = writeJsonBackup(buildFullSnapshot(req.user.id), 'pre-demo');
   loadDemoData(db, req.user.id);
   res.json({ ok: true, backupFile: backupFile.replace(/\\/g, '/').split('/').pop() });
 }));

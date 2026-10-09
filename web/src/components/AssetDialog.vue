@@ -273,7 +273,9 @@ function reset() {
     });
   }
 }
-watch(() => props.modelValue, v => { if (v) { reset(); loadCurrentRate(); } });
+/* immediate：配合 OpsDialogs 的 v-if 懒挂载 —— 挂载时 modelValue 已是 true，
+   无 immediate 则 watch 不触发、表单不会初始化。v=false 时无副作用。 */
+watch(() => props.modelValue, v => { if (v) { reset(); loadCurrentRate(); } }, { immediate: true });
 watch(() => form.type, t => {
   if (t === 'stock') form.currency = form.market === 'US' ? 'USD' : 'CNY';
   else form.currency = form.currency || 'CNY';

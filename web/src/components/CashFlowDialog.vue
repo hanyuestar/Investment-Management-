@@ -99,6 +99,7 @@ const amountCNY = computed(() => {
   return a * rate.value;
 });
 
+/* immediate：配合 v-if 懒挂载（v=false 时直接 return，无副作用） */
 watch(() => props.modelValue, async v => {
   if (!v) return;
   const acc = props.defaultAccountId || props.accounts[0]?.id || '';
@@ -108,7 +109,7 @@ watch(() => props.modelValue, async v => {
     amount: null, fx: 7.1, note: '',
   });
   try { const c = await fxApi.current(); form.fx = c.rate; } catch { /* ignore */ }
-});
+}, { immediate: true });
 /* 切换账户时，录入币种跟随账户币种（用户仍可手动改） */
 watch(() => form.accountId, id => {
   const cur = props.accounts.find(a => a.id === id)?.currency;

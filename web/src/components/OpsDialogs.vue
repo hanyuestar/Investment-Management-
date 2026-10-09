@@ -1,11 +1,11 @@
 <template>
-  <AssetDialog v-model="assetDlg" :asset="editingAsset" :accounts="store.accounts" @saved="changed" />
+  <AssetDialog v-if="assetDlg" v-model="assetDlg" :asset="editingAsset" :accounts="store.accounts" @saved="changed" />
   <EventDialog v-if="eventAsset" v-model="eventDlg" :asset="eventAsset" :event="editingEvent" @saved="changed" />
   <AlertDialog v-if="alertAsset" v-model="alertDlg" :asset="alertAsset" @saved="changed" />
-  <AccountDialog v-model="accountDlg" :account="editingAccount" @saved="changed" />
-  <CashFlowDialog v-model="cashDlg" :accounts="store.accounts" :default-account-id="defaultCashAccount" @saved="changed" />
-  <DcaPlanDialog v-model="dcaDlg" :assets="store.assets" @saved="changed" />
-  <FxDialog v-model="fxDlg" @saved="changed" />
+  <AccountDialog v-if="accountDlg" v-model="accountDlg" :account="editingAccount" @saved="changed" />
+  <CashFlowDialog v-if="cashDlg" v-model="cashDlg" :accounts="store.accounts" :default-account-id="defaultCashAccount" @saved="changed" />
+  <DcaPlanDialog v-if="dcaDlg" v-model="dcaDlg" :assets="store.assets" @saved="changed" />
+  <FxDialog v-if="fxDlg" v-model="fxDlg" @saved="changed" />
 </template>
 
 <script setup>
