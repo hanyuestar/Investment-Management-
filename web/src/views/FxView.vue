@@ -74,14 +74,21 @@ const fxList = ref([]);
 async function loadFx() {
   try { fxList.value = await fxApi.list(); } catch { fxList.value = []; }
 }
-onMounted(loadFx);
+onMounted(async () => { await loadFx(); await loadCurrent(); });
 
-const current = computed(() => {
+/** 接口返回的权威「当前汇率」（含来源）；取不到时回退下面的本地推算 */
+const apiCurrent = ref(null);
+/** 本地推算（离线兜底）：口径须与后端 currentFxRow 一致 —— date<=今天，同日 manual 优先 */
+const localCurrent = computed(() => {
   const list = [...fxList.value].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1
     : (a.source === 'manual' ? 1 : 0) - (b.source === 'manual' ? 1 : 0)));
   const today = new Date().toISOString().slice(0, 10);
   return list.find(f => f.date <= today) || { rate: 7.1, source: 'fallback', date: '' };
 });
+const current = computed(() => apiCurrent.value || localCurrent.value);
+async function loadCurrent() {
+  try { apiCurrent.value = await fxApi.current(); } catch { apiCurrent.value = null; }
+}
 
 function sourceLabel(s) { return FX_SOURCE_LABEL[s] || s; }
 function sourceBadge(s) { return { manual: 'badge-manual', auto: 'badge-auto', fallback: 'badge-fallback' }[s] || 'badge-gray'; }

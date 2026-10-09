@@ -73,13 +73,23 @@ function addManualFx(date, rate, note) {
 }
 
 /** 当前生效汇率（date<=今天 的最近一条；同日 manual 优先） */
-function currentFx(atDate = todayStr()) {
+/**
+ * 当前生效汇率行（含日期与来源）—— 「当前汇率」的**权威实现**，各处应复用它。
+ * 口径：date <= atDate 中最近一条；同一天 manual 优先于 auto。
+ */
+function currentFxRow(atDate = todayStr()) {
   const row = getDb().prepare(`
-    SELECT rate FROM fx_rate
+    SELECT rate, date, source, note FROM fx_rate
     WHERE date <= ?
     ORDER BY date DESC, CASE source WHEN 'manual' THEN 1 ELSE 0 END DESC, id DESC
     LIMIT 1`).get(atDate);
-  return row ? row.rate : 7.1;
+  return row
+    ? { rate: row.rate, date: row.date, source: row.source, note: row.note || '' }
+    : { rate: 7.1, date: null, source: 'fallback', note: '' };   // 无任何记录时沿用内置兜底
 }
 
-module.exports = { syncFxRate, addManualFx, currentFx, todayStr };
+function currentFx(atDate = todayStr()) {
+  return currentFxRow(atDate).rate;
+}
+
+module.exports = { syncFxRate, addManualFx, currentFx, currentFxRow, todayStr };

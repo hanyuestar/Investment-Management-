@@ -41,6 +41,8 @@
     const t = TODAY();
     const f = (S.fx || []).filter(r => r.date <= t).sort((a, b) =>
       a.date < b.date ? -1 : a.date > b.date ? 1 : ((a.source === 'manual' ? 1 : 0) - (b.source === 'manual' ? 1 : 0)));
+    /* 口径与 services/fx.js 的 currentFx 一致（date<=atDate、同日 manual 优先）。
+       引擎侧刻意用内存实现而非查库：calc.js 必须保持纯函数（可脱离 DB 单测）。 */
     return f.length ? f[f.length - 1].rate : 7.1;
   }
   /** 资产估值汇率：人民币恒为 1，美元用最新汇率 */

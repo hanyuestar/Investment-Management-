@@ -18,20 +18,11 @@ router.get('/', (req, res) => {
   res.json(rows.map(mapRow));
 });
 
-/** 当前生效汇率 + 来源（口径与引擎 Calc.currentFx 一致，UTC 当日） */
-router.get('/current', (req, res) => {
-  const today = fxService.todayStr();
-  const db = getDb();
-  const row = db.prepare(`
-    SELECT * FROM fx_rate WHERE date <= ?
-    ORDER BY date DESC, CASE source WHEN 'manual' THEN 1 ELSE 0 END DESC, id DESC LIMIT 1`).get(today);
-  res.json({
-    date: row?.date || null,
-    rate: row ? row.rate : fxService.currentFx(today),
-    source: row?.source || 'fallback',
-    note: row?.note || '',
+  /** 当前生效汇率 + 来源。口径与引擎 Calc.currentFx 一致（UTC 当日）；
+      取值统一收敛到 fxService.currentFxRow()，此处不再自写 SQL。 */
+  router.get('/current', (req, res) => {
+    res.json(fxService.currentFxRow(fxService.todayStr()));
   });
-});
 
 router.post('/', adminRequired, (req, res) => {
   const date = String(req.body?.date || '').slice(0, 10);
