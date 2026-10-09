@@ -8,7 +8,6 @@ const { authRequired, adminRequired } = require('../middleware/auth');
 const { asyncHandler, badRequest, notFound } = require('../middleware/helpers');
 const { encrypt, decrypt, maskSecret } = require('../crypto');
 const mailer = require('../services/mailer');
-const fxService = require('../services/fx');
 
 const router = express.Router();
 router.use(authRequired, adminRequired);
@@ -82,21 +81,6 @@ router.post('/mail/test', asyncHandler(async (req, res) => {
   const result = await mailer.testConnection(to);
   res.status(result.ok ? 200 : 502).json(result);
 }));
-
-/* ================= 汇率管理（别名，权限同 /api/fx） ================= */
-router.get('/fx', (req, res) => {
-  const rows = getDb().prepare('SELECT * FROM fx_rate ORDER BY date DESC, source DESC').all();
-  res.json(rows.map(r => ({ id: r.id, date: r.date, rate: r.rate, source: r.source, note: r.note || '' })));
-});
-
-router.put('/fx', (req, res) => {
-  const date = String(req.body?.date || '').slice(0, 10);
-  const rate = Number(req.body?.rate);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return badRequest(res, '日期格式应为 YYYY-MM-DD');
-  if (!(rate > 0)) return badRequest(res, '汇率需大于 0');
-  fxService.addManualFx(date, rate, String(req.body?.note || ''));
-  res.json({ ok: true });
-});
 
 /* ================= 系统概览 ================= */
 router.get('/stats', (req, res) => {

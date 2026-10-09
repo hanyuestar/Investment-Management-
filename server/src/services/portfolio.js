@@ -20,7 +20,6 @@ function scope(S, accountId) {
   };
 }
 
-function pct(n) { return n == null ? null : n; }
 
 /** 一次性返回前端所需的全部派生数据 */
 function computeAll(userId, accountId) {
@@ -178,9 +177,9 @@ function computeAll(userId, accountId) {
     netInvest: s.netInvest,
     buyTotal: s.buyTotal,
     /* ── 绩效 ── */
-    xirr: pct(xirr),
+    xirr: xirr,
     holdingDays: days,
-    twr: pct(twr),
+    twr: twr,
     alpha: bm && bm.alpha != null ? bm.alpha : null,
     benchmarkCode: settings.benchmarkCode,
     yearProfit,
@@ -200,7 +199,7 @@ function computeAll(userId, accountId) {
     accounts,
     aggregation,
     performance: {
-      xirr: pct(xirr), twr: pct(twr), simpleAnnualized: pct(simpleAnn),
+      xirr: xirr, twr: twr, simpleAnnualized: simpleAnn,
       cumulativeRate: s.rate, holdingDays: days,
       invest: s.invest, profit: s.profit,
       real: s.real, unreal: s.unreal, mv: s.mv, cash: s.cash,
