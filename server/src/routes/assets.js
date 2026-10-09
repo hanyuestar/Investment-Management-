@@ -46,12 +46,12 @@ function validateAlerts(al) {
 function parseMargin(body, account, dateStr) {
   const raw = Number(body.margin != null ? body.margin : body.marginCNY);
   if (!isFinite(raw) || raw === 0) return 0;
-  if (raw < 0) return '融资金额不能为负';
+  if (raw < 0) return '融资不能为负';
   if (account.kind !== 'broker') return '仅券商账户支持融资';
   const inCur = ['CNY', 'USD'].includes(body.marginCurrency) ? body.marginCurrency : 'CNY';
   if (inCur === 'CNY') return +raw.toFixed(2);
   const rate = (+body.marginFx > 0) ? +body.marginFx : currentFx(dateStr || now().slice(0, 10));
-  if (!isFinite(rate) || rate <= 0) return '汇率非法，无法换算融资金额';
+  if (!isFinite(rate) || rate <= 0) return '汇率非法，无法换算融资';
   return +(raw * rate).toFixed(2);      // USD → CNY
 }
 
@@ -117,7 +117,7 @@ router.post('/', asyncHandler(async (req, res) => {
       ? +opening.costPrice * +opening.qty
       : (+opening.amount > 0 ? +opening.amount : 0);
     if (oCost > 0 && marginCNY > oCost + 1e-6) {
-      return badRequest(res, `融资额（¥${marginCNY}）不能超过期初建仓成本（¥${oCost.toFixed(2)}）—— 成本请填「自付 + 融资」的总额`);
+      return badRequest(res, `融资（¥${marginCNY}）不能超过期初建仓成本（¥${oCost.toFixed(2)}）—— 成本请填「自付 + 融资」的总额`);
     }
   }
 

@@ -63,7 +63,7 @@ function normalize(body, asset) {
       v.qty = qty; v.price = price;
       v.marginCNY = marginCNY;      // 买入：本次使用的融资额；卖出：忽略（还款由引擎按所得自动计算）
       if (type === 'buy' && marginCNY > qty * price + 1e-6) {
-        return { error: `融资额（¥${marginCNY}）不能超过成交金额（¥${+(qty * price).toFixed(2)}）—— 成交金额请填「自付 + 融资」的总额` };
+        return { error: `融资（¥${marginCNY}）不能超过成交金额（¥${+(qty * price).toFixed(2)}）—— 成交金额请填「自付 + 融资」的总额` };
       }
     } else if (type === 'div') {
       const r = incomeAmount();
@@ -99,7 +99,7 @@ function normalize(body, asset) {
       v.qty = qty; v.price = price; v.amount = +(qty * price).toFixed(2);
       v.marginCNY = marginCNY;      // 申购：本次使用的融资额
       if (type === 'invest' && marginCNY > qty * price + 1e-6) {
-        return { error: `融资额（¥${marginCNY}）不能超过申购金额（¥${+(qty * price).toFixed(2)}）—— 金额请填「自付 + 融资」的总额` };
+        return { error: `融资（¥${marginCNY}）不能超过申购金额（¥${+(qty * price).toFixed(2)}）—— 金额请填「自付 + 融资」的总额` };
       }
     } else {
       const r = incomeAmount();
@@ -131,7 +131,7 @@ router.post('/', asyncHandler(async (req, res) => {
   if (value.marginCNY > 0) {
     const acc = getDb().prepare('SELECT kind FROM account WHERE id=? AND user_id=?')
       .get(asset.account_id, req.user.id);
-    if (!acc || acc.kind !== 'broker') return badRequest(res, '仅券商账户的买入/申购支持录入融资金额');
+    if (!acc || acc.kind !== 'broker') return badRequest(res, '仅券商账户的买入/申购支持录入融资');
   }
 
   const info = getDb().prepare(`INSERT INTO event

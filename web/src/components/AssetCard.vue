@@ -36,7 +36,7 @@
       <span>累计手续费</span><b class="num">¥{{ money(h.calc.feeTotalCNY) }}</b>
     </div>
     <div class="ac-row" v-if="h.calc.marginCNY > 0">
-      <span>融资余额</span><b class="num down">¥{{ money(h.calc.marginCNY) }}</b>
+      <span :title="'向券商借入、尚未偿还的融资（卖出所得会自动优先偿还）'">融资</span><b class="num down">¥{{ money(h.calc.marginCNY) }}</b>
     </div>
     <div class="ac-row" v-if="h.calc.marginCNY > 0">
       <span>实际净值 / 自付本金</span>

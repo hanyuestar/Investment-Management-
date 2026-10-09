@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS asset (
   price        REAL NOT NULL DEFAULT 0,                -- 股票最新价（账户币种）
   market_value REAL NOT NULL DEFAULT 0,                -- 非股票当前市值（账户币种）
   unit_price   REAL NOT NULL DEFAULT 0,                -- 非股票单位净值/单价（账户币种；市值 = 份额 × 单位净值）
-  margin_cny   REAL NOT NULL DEFAULT 0,                -- v7 创建该资产时已使用的融资金额（CNY，欠券商）
+  margin_cny   REAL NOT NULL DEFAULT 0,                -- v7 创建该资产时已使用的融资（CNY，欠券商）
   alerts_json  TEXT,
   created_at   TEXT NOT NULL
 );

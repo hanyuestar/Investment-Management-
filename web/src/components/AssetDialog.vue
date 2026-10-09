@@ -64,7 +64,7 @@
       </el-form-item>
 
       <template v-if="isBroker">
-        <el-form-item label="融资金额">
+        <el-form-item label="融资">
           <el-radio-group v-model="form.marginCurrency" style="margin-right:8px">
             <el-radio-button label="CNY">CNY</el-radio-button>
             <el-radio-button label="USD">USD</el-radio-button>
@@ -73,11 +73,11 @@
         </el-form-item>
         <el-form-item label=" ">
           <div class="form-tip" style="line-height:1.7">
-            单位为{{ ccyName(form.marginCurrency) }}；当前该资产已使用的<b>融资额</b>（欠券商的钱，需原样偿还）。
+            单位为{{ ccyName(form.marginCurrency) }}；当前该资产已使用的<b>融资</b>（欠券商的钱，需原样偿还）。
             留空或 0 表示无融资。
             <br>
             ⚠️ 下方的<b>期初建仓成本请填「自付 + 融资」的总额</b>（融资是其中借来的部分），
-            否则融资部分会被误算成收益。后续买入可在流水中分别录入每次使用的融资额。
+            否则融资部分会被误算成收益。后续买入可在流水中分别录入每次使用的融资。
           </div>
         </el-form-item>
       </template>
@@ -324,7 +324,7 @@ async function save() {
         payload.marginCurrency = form.marginCurrency;
         if (form.marginCurrency === 'USD') {
           const r = +form.fx || 0;
-          if (!(r > 0)) return ElMessage.warning('按 USD 录入融资金额时请填写有效汇率');
+          if (!(r > 0)) return ElMessage.warning('按 USD 录入融资时请填写有效汇率');
           payload.marginFx = r;
         }
       }
@@ -345,7 +345,7 @@ async function save() {
         payload.marginCurrency = form.marginCurrency;
         if (form.marginCurrency === 'USD') {
           const r = +form.rate || 0;
-          if (!(r > 0)) return ElMessage.warning('按 USD 录入融资金额时请填写有效汇率');
+          if (!(r > 0)) return ElMessage.warning('按 USD 录入融资时请填写有效汇率');
           payload.marginFx = r;
         }
       }

@@ -8,7 +8,7 @@
  *  2. 【全类型份额】股票/基金/理财/债券统一走「份额 + 单位成本」框架，
  *     非股票不再只有金额，calcAsset 对任何类型都返回 qty / avgCNY。
  *  3. 【账户现金】accountCash()：现金 = 入金−出金 − (买入−融资)−申购 + (卖出−还款)+赎回 + 分红+利息。
- *     持仓口径以「持仓市值」对外展示；账户现金与融资余额各自独立展示，不做合成。
+ *     持仓口径以「持仓市值」对外展示；账户现金与融资各自独立展示，不做合成。
  *  4. 【双口径收益】
  *     - 持仓口径 profitInvest = 已实现 + 分红/利息 + 浮动（衡量投资能力，与 XIRR/TWR 同源）
  *     - 账户口径 profitAccount = 期末净值 − 有效净投入（回答「我到底赚了多少」）
@@ -177,7 +177,7 @@
         }
         realLocal += rl; realCNY += rc;
         if (isStock) sellProceedsCNY += proceedsLocal * f; else redeemCNY += proceedsLocal * f;
-        /* 卖出所得优先偿还融资余额（还清为止，不多还） */
+        /* 卖出所得优先偿还融资（还清为止，不多还） */
         if (marginBalance > 0) {
           const proceedCNY = proceedsLocal * f;
           const repay = Math.min(proceedCNY > 0 ? proceedCNY : 0, marginBalance);
@@ -223,8 +223,8 @@
     const pricePnlCNY = round2((unitPx - avgLocal) * qty * cnyRate);
     const fxPnlCNY = round2(unrealCNY - pricePnlCNY);
 
-    /* 融资与净值：融资余额要原样还给券商，故「实际净值 = 市值 − 融资余额」；
-       自付本金 = 持仓成本 − 融资余额。
+    /* 融资与净值：融资要原样还给券商，故「实际净值 = 市值 − 融资」；
+       自付本金 = 持仓成本 − 融资。
        校验：(mv − margin) − (cost − margin) = mv − cost = 浮动 ✔ 口径自洽 */
     const marginCNY = Math.max(0, round2(marginBalance));
     const netValueCNY = round2(mvCNY - marginCNY);
@@ -285,7 +285,7 @@
       if (c.kind === 'deposit') { dep += v; cash += v; } else { wd += v; cash -= v; }
     });
     (S.assets || []).filter(inAcc).forEach(a => {
-      /* 融资余额时序演进（与 calcUnified 一致）：
+      /* 融资时序演进（与 calcUnified 一致）：
          期初融资 + 各笔买入融资 − 卖出所得优先偿还部分 */
       let mBal = +a.marginCNY > 0 ? +a.marginCNY : 0;
       eventsOf(S, a.id).forEach(e => {
@@ -323,13 +323,13 @@
       netDeposit: round2(dep - wd),          // 净入金（仅出入金）
       net: round2(dep - wd),                 // ★ 兼容旧字段名（= 净入金）
       openingCost: round2(openCost),         // 期初建仓本金
-      marginBalance: round2(marginBal),      // 融资余额合计（欠券商，需原样偿还）
+      marginBalance: round2(marginBal),      // 融资合计（欠券商，尚未偿还）
       effectiveInvest: round2(dep - wd + openCost)   // 有效净投入 = 净入金 + 期初建仓本金
     };
   }
   /**
-   * 指定日期的融资余额合计（按时序重放到 asOfDate 含当日）。
-   * 用于「年初投入本金 = 上年 12/31 的净资产」：需要当时的融资金额。
+   * 指定日期的融资合计（按时序重放到 asOfDate 含当日）。
+   * 用于「年初投入本金 = 上年 12/31 的净资产」：需要当时的融资。
    * 口径与 calcUnified 的融资演进一致：期初融资 + 各笔买入融资 − 卖出所得优先偿还。
    */
   function marginBalanceAt(S, asOfDate, opts) {
@@ -379,7 +379,7 @@
         mv += r.mvCNY; profitInvest += assetTotal(r);
         netInvest += r.netInvestCNY;
         accFee += r.feeTotalCNY || 0;                 // 该账户累计手续费
-        accMargin += r.marginCNY || 0;                // 该账户融资余额（欠券商）
+        accMargin += r.marginCNY || 0;                // 该账户融资（欠券商）
       });
       const cf = accountCash(S, { accountId: acc.id });
       const profit = round2(profitInvest);          // 累计收益（单一，= 已实现+分红+利息+浮动）
@@ -390,7 +390,7 @@
         netDeposit: cf.netDeposit, openingCost: cf.openingCost, effectiveInvest: cf.effectiveInvest,
         netInvest: round2(netInvest),
         feeTotal: round2(accFee),             // 该账户累计手续费
-        margin: round2(accMargin),            // 该账户融资余额（欠券商）
+        margin: round2(accMargin),            // 该账户融资（欠券商）
         profit, profitInvest: profit, profitAccount: profit,   // 兼容别名
         invest,
         rate: invest > 0 ? profit / invest : 0,
@@ -465,7 +465,7 @@
     const profit = round2(real + unreal);
     const invest = cf.netDeposit;
     /* 注：v1.0.4 起取消「总资产」概念，持仓口径以「持仓市值」对外展示；
-       现金与融资余额分别由 cash / marginTotal 单独给出，不做合成。 */
+       现金与融资分别由 cash / marginTotal 单独给出，不做合成。 */
     return {
       /* 持仓构成 */
       total: round2(mv),                    // 兼容旧字段名（= 持仓市值）
@@ -483,7 +483,7 @@
       buyTotal: round2(buyTotal),           // 累计买入/申购（仅展示）
       /* 手续费与融资（v7） */
       feeTotal: round2(feeTotal),           // 累计手续费（含税，所有类型）
-      marginTotal: round2(marginTotal),     // 融资余额合计（欠券商）
+      marginTotal: round2(marginTotal),     // 融资合计（欠券商）
       netValueTotal: round2(netValueTotal), // 实际净值合计 = 持仓市值 − 融资
       selfCostTotal: round2(selfCostTotal), // 自付本金合计 = 持仓成本 − 融资
       cash: cf.cash,

@@ -3,7 +3,7 @@
     <div class="page-head">
       <div>
         <h2>账户</h2>
-        <div class="sub">券商 / 银行 / 其他账户的市值、收益与出入金汇总；券商账户另显示融资余额（欠券商的钱，需原样偿还）</div>
+        <div class="sub">券商 / 银行 / 其他账户的市值、收益与出入金汇总；券商账户另显示融资（欠券商的钱，需原样偿还）</div>
       </div>
       <div class="actions">
         <el-button type="primary" @click="ops.createAccount()">新增账户</el-button>
@@ -26,7 +26,7 @@
               <td><span class="badge badge-gray">{{ kindLabel(a.kind) }}</span></td>
               <td>{{ a.currency }}</td>
               <td class="num">¥{{ money(a.mvCNY) }}</td>
-              <td class="num" :class="a.margin > 0 ? 'down' : ''" :title="a.margin > 0 ? '该账户融资余额（欠券商，需原样偿还）' : ''">
+              <td class="num" :class="a.margin > 0 ? 'down' : ''" :title="a.margin > 0 ? '该账户融资（欠券商，需原样偿还）' : ''">
                 {{ a.margin > 0 ? '¥' + money(a.margin) : '—' }}
               </td>
               <td class="num" :class="signClass(a.real)">{{ signedMoney(a.real) }}</td>

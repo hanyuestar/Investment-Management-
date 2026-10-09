@@ -65,7 +65,7 @@ function computeAll(userId, accountId) {
   const yearReal = yRow ? yRow.real : null;
   const yearFloat = yRow && yRow.hasF ? yRow.pureFloat : null;   // 本年浮动（无快照时无意义）
 
-  /* 年投入本金：取**上一年 12/31 的净资产**（持仓市值 − 融资余额），用于计算年收益率。
+  /* 年投入本金：取**上一年 12/31 的净资产**（持仓市值 − 融资），用于计算年收益率。
      缺失上年末快照时退化为「本年净入金」；两者皆无则不计算收益率。 */
   const prevYear = String(Number(nowYear) - 1);
   const prevDecSnap = (S.snapshots || []).find(x => x.month === `${prevYear}-12`);
@@ -113,14 +113,14 @@ function computeAll(userId, accountId) {
         + `若入金是另外新转入的钱，可点「不再提示」。`,
     });
   }
-  /* 现金为负：需排除「融资买入」造成的正常负现金 —— 融资余额本质上就是这笔负现金 */
+  /* 现金为负：需排除「融资买入」造成的正常负现金 —— 融资本质上就是这笔负现金 */
   if (s.cash < -0.01 && s.cash < -(s.marginTotal || 0) - 1) {
     warnings.push({
       code: 'negative_cash',
       level: 'warn',
       title: '账户现金为负',
       cash: s.cash, marginTotal: s.marginTotal,
-      msg: `账户现金为 ¥${s.cash}，已超出融资余额（¥${s.marginTotal}）可解释的范围，`
+      msg: `账户现金为 ¥${s.cash}，已超出融资（¥${s.marginTotal}）可解释的范围，`
         + `说明有**漏记的入金**。请到「出入金」页补录，否则账户现金会偏低。`
         + `（提示：买入/申购不要再记入金——同一笔钱只在「入金」时算一次外部流入。）`,
     });
@@ -150,7 +150,7 @@ function computeAll(userId, accountId) {
     cashIncome: s.cashIncome,
     /* ── 手续费与融资（v7）── */
     feeTotal: s.feeTotal,                // 累计手续费（含税，所有类型）
-    marginTotal: s.marginTotal,          // 融资余额合计（欠券商）
+    marginTotal: s.marginTotal,          // 融资合计（欠券商）
     netValueTotal: s.netValueTotal,      // 实际净值合计 = 持仓市值 − 融资
     selfCostTotal: s.selfCostTotal,      // 自付本金合计 = 持仓成本 − 融资
     /* ── 诊断 / 出入金页 ── */

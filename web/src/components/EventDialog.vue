@@ -110,10 +110,10 @@
               <br>
               本次 <b>总额 {{ fmtMoney(grossAmount) }}</b> − <b>融资 {{ fmtMoney(+form.margin) }}</b>
               = <b>你要自付 {{ fmtMoney(selfPaid) }}</b> {{ form.marginCurrency }}
-              <span v-if="selfPaid < 0" style="color:#c45656">（融资额已超过总额，请检查录入）</span>
+              <span v-if="selfPaid < 0" style="color:#c45656">（融资已超过总额，请检查录入）</span>
             </template>
             <br>
-            <b>卖出所得会优先偿还融资</b>，融资余额需原样还给券商，不计入你的收益。
+            <b>卖出所得会优先偿还融资</b>，融资需原样还给券商，不计入你的收益。
           </div>
         </el-form-item>
       </template>
@@ -270,7 +270,7 @@ async function save() {
   if (mg > 0 && showMargin.value) {
     if (form.marginCurrency === 'USD') {
       const rate = +form.fx || 0;
-      if (!(rate > 0)) return ElMessage.warning('按 USD 录入融资金额时请填写有效汇率');
+      if (!(rate > 0)) return ElMessage.warning('按 USD 录入融资时请填写有效汇率');
       payload.marginCNY = +(mg * rate).toFixed(2);
     } else {
       payload.marginCNY = +mg.toFixed(2);
