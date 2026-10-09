@@ -77,11 +77,12 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { ElMessage, ElMessageBox } from 'element-plus';
+import { ElMessage } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
 import { cashflowsApi } from '../api';
 import { money } from '../utils/format';
 import OpsDialogs from '../components/OpsDialogs.vue';
+import { useRemoveConfirm } from '../composables/useRemoveConfirm';
 
 const store = usePortfolioStore();
 const ops = ref(null);
@@ -89,12 +90,9 @@ const cash = computed(() => store.d?.cash || { deposit: 0, withdraw: 0, net: 0 }
 const rows = computed(() => store.cashFlows);
 function accountCcy(id) { return store.accounts.find(a => a.id === id)?.currency || ''; }
 
+const confirmRemove = useRemoveConfirm();
 async function remove(row) {
-  try {
-    await ElMessageBox.confirm('确定删除该出入金记录？', '删除确认', { type: 'warning' });
-  } catch { return; }
-  await cashflowsApi.remove(row.id);
-  ElMessage.success('已删除');
-  await store.refreshAll();
+  /* 删除确认统一走 useRemoveConfirm（确认弹窗 → 接口 → 提示 → 刷新） */
+  await confirmRemove({ text: '确定删除该出入金记录？', request: () => cashflowsApi.remove(row.id) });
 }
 </script>
