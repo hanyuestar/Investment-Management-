@@ -55,32 +55,50 @@ function computeAll(userId, accountId) {
   }));
 
   /* ---------- 本年收益（1/1 ~ 12/31）----------
-   * 本年已实现 = 当年 已实现 + 分红 + 利息（按月汇总）
-   * 本年浮动   = Σ(月末快照差 − 当月证券净投入)（纯浮动，需月末快照；无快照则为 null）
-   * 本年收益   = 已实现 + 浮动
+   * 用「净资产法」计算，**不依赖月末快照**，与「累计收益」卡片的浮动口径天然一致：
+   *   当前净资产 = 持仓市值 + 账户现金 − 融资金额
+   *   年初净资产 = 上一年 12/31 的（持仓市值 − 融资金额）；无该快照时按 0（视为年初无持仓）
+   *   本年收益   = 当前净资产 − 年初净资产 − 本年净入金      ← 净资产变化剔除当年净投入
+   *   本年已实现 = 当年 已实现 + 分红 + 利息（按月汇总）
+   *   本年浮动   = 本年收益 − 本年已实现
+   *   年投入本金 = 年初净资产；若为 0 则退化为「本年净入金」
+   *   年收益率   = 本年收益 ÷ 年投入本金
    */
   const nowYear = Calc.TODAY().slice(0, 4);
   const yRow = years.find(y => y.year === nowYear);
-  const yearProfit = yRow ? (yRow.hasF ? yRow.total : yRow.real) : null;
-  const yearReal = yRow ? yRow.real : null;
-  const yearFloat = yRow && yRow.hasF ? yRow.pureFloat : null;   // 本年浮动（无快照时无意义）
+  const yearReal = yRow ? yRow.real : 0;
+  const yearDeposit = yRow ? yRow.netDeposit : 0;
 
-  /* 年投入本金：取**上一年 12/31 的净资产**（持仓市值 − 融资），用于计算年收益率。
-     缺失上年末快照时退化为「本年净入金」；两者皆无则不计算收益率。 */
   const prevYear = String(Number(nowYear) - 1);
   const prevDecSnap = (S.snapshots || []).find(x => x.month === `${prevYear}-12`);
-  const prevDecMargin = prevDecSnap ? Calc.marginBalanceAt(S, `${prevYear}-12-31`, opts) : 0;
-  let yearBaseInvest = null;
-  let yearBaseSource = null;
-  if (prevDecSnap) {
-    yearBaseInvest = round2((prevDecSnap.total || 0) - prevDecMargin);
-    yearBaseSource = 'prev-year-end';        // 上年 12/31 净资产
-  } else {
-    const yDep = yRow ? yRow.netDeposit : null;
-    if (yDep && Math.abs(yDep) > 1e-9) { yearBaseInvest = round2(yDep); yearBaseSource = 'current-year-deposit'; }
+
+  /* 年初（上年 12/31）的累计浮动 = 上年末快照市值 − 上年末剩余持仓成本。
+     ⚠️ 不用「净资产」口径：期初建仓不产生现金流（刻意设计），
+        净资产会把期初建仓本金重复计入，导致本年收益虚高。 */
+  const startCost = prevDecSnap ? Calc.costBasisAt(S, `${prevYear}-12-31`, opts) : 0;
+  /* 守卫：仅当上年末**确实存在持仓成本**时才认可「年初浮动」。
+     否则说明该快照与持仓记录不一致（例如持仓是今年才录入的期初建仓），
+     此时把年初浮动视为 0，避免本年浮动被算成负数巨值。 */
+  const yearStartFloat = (prevDecSnap && startCost > 1e-9)
+    ? round2((prevDecSnap.total || 0) - startCost)
+    : 0;
+
+  /* 本年浮动 = 累计浮动 − 年初累计浮动（无需月末快照；无上年末快照时年初浮动为 0） */
+  const yearFloat = round2(s.unreal - yearStartFloat);
+  const yearProfit = round2(yearReal + yearFloat);
+
+  let yearBaseInvest = null, yearBaseSource = null;
+  /* 与年初浮动同一守卫：快照须与持仓记录一致（上年末确有持仓成本）才作为本金 */
+  if (prevDecSnap && startCost > 1e-9) {
+    yearBaseInvest = round2((prevDecSnap.total || 0) - Calc.marginBalanceAt(S, `${prevYear}-12-31`, opts));
+    yearBaseSource = 'prev-year-end';
   }
-  if (yearBaseInvest !== null && Math.abs(yearBaseInvest) < 1e-9) yearBaseInvest = null;   // 本金为 0 时不计算收益率
-  const yearRate = (yearProfit != null && yearBaseInvest) ? yearProfit / yearBaseInvest : null;
+  if ((yearBaseInvest === null || yearBaseInvest <= 1e-9) && Math.abs(yearDeposit) > 1e-9) {
+    yearBaseInvest = round2(yearDeposit);
+    yearBaseSource = 'current-year-deposit';
+  }
+  if (yearBaseInvest !== null && yearBaseInvest <= 1e-9) yearBaseInvest = null;
+  const yearRate = yearBaseInvest ? yearProfit / yearBaseInvest : null;
 
   const holdings = s.rows.map(({ a, r, mv, profit }) => ({ asset: a, calc: r, mvCNY: mv, profitCNY: profit }));
 

@@ -361,6 +361,44 @@
     return round2(total);
   }
 
+  /**
+   * 指定日期的**剩余持仓成本**合计（CNY，加权平均口径，重放到 asOfDate 含当日）。
+   * 用于「年初浮动 = 上年末快照市值 − 上年末剩余成本」。
+   * 说明：仅按加权平均结转（默认口径），不做 FIFO 批次结转。
+   */
+  function costBasisAt(S, asOfDate, opts) {
+    const accId = opts && opts.accountId;
+    const inAcc = x => !accId || x.accountId === accId;
+    let total = 0;
+    (S.assets || []).filter(inAcc).forEach(a => {
+      let qty = 0, cost = 0;
+      eventsOf(S, a.id).forEach(e => {
+        if (e.date > asOfDate) return;
+        const act = actionOf(e);
+        const f = e.fx || 1;
+        const tQty = +e.qty || 0, tAmt = e.amount != null ? +e.amount || 0 : 0;
+        const px = +e.price || (tQty > 0 ? tAmt / tQty : 0);
+        const gross = tQty > 0 ? tQty * px : tAmt;
+        const fee = e.fee || 0;
+        if (act === 'opening' || act === 'buy' || act === 'invest') {
+          const q = act === 'opening' ? (tQty > 0 ? tQty : 1) : tQty;
+          qty += q; cost += (gross + fee) * f;
+        } else if (act === 'sell' || act === 'redeem') {
+          if (tQty > 0 && qty > 1e-9) {
+            const per = cost / qty;
+            const take = Math.min(tQty, qty);
+            cost -= per * take; qty -= take;
+          } else if (cost > 0) {
+            /* 金额口径赎回：按金额占比结转 */
+            cost = Math.max(0, cost - (gross - fee) * f);
+          }
+        }
+      });
+      total += Math.max(0, cost);
+    });
+    return round2(total);
+  }
+
   /** 兼容旧名：仅出入金汇总 */
   function cashFlowSummary(S, opts) {
     const c = accountCash(S, opts);
@@ -838,7 +876,7 @@
   }
 
   return { DEFAULTS, TAX_DEFAULT, ALLOC_DEFAULT, TODAY, currentFx, assetFx, eventsOf, actionOf, unitPriceOf,
-    calcAsset, assetTotal, accountCash, cashFlowSummary, marginBalanceAt,
+    calcAsset, assetTotal, accountCash, cashFlowSummary, marginBalanceAt, costBasisAt,
     accountSummary, securityAggregation, summary, realizedByMonth, netDepositByMonth, netInvestByMonth, monthRows, yearRows,
     xirr, portfolioFlows, portfolioXirr, annualized, holdingDays, twr, allocation, concentration, benchmark,
     realizedGainsByYear, taxEstimate, dcaGenerate, checkAlerts };
