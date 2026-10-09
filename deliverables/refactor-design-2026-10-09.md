@@ -181,3 +181,25 @@ A3（格式） → A1/A2（汇率收敛） → B2（备份抽函数） → B1（
 3. `cd web && npm run build` → 零错误
 4. `cp server/src/calc.js design/server/calc.js` 保持交付包一致
 5. 涉及 UI 的步骤：CDP E2E 确认目标功能可用且 **JS 异常 0**
+
+---
+
+## 6. 实施记录
+
+| 阶段 | 提交 | 实际落地与设计的差异 |
+|---|---|---|
+| Phase 1 | `90c417b` | 按设计执行，无差异 |
+| Phase 3-A | `a79a966` | 按设计执行（`currentFxRow()` 为权威实现）；额外修正缩进 |
+| Phase 3-B2 | `894a7c4` | **偏离设计**：抽为 `buildPortablePayload` / `buildFullSnapshot` **两个**函数，而非一个带 flag 的函数（三处用途不同，不可合并） |
+| demo 备份修复 + 版本号 1.0.4 + B3 | `201ccff` | B3 加 `v-if` 前**须先补 `watch(modelValue, …, { immediate: true })`**，否则破坏表单初始化（设计未预见到） |
+| B1 试点 | `a741671` | 组合式函数实际签名比设计多 `successText` / `beforeRefresh` / `refresh`；弹窗标题取「删除确认」（设计草稿写的是「确认删除」） |
+| **B1 收尾（本轮）** | `8015cd9` | 迁移剩余 8 视图 / 9 处；**额外新增 `animate` 选项**——FxView / AdminView 原走 `refreshAll(false)`（不闪 KPI），无此选项会引入行为变化 |
+
+**B1 完成度**：10 处删除确认（9 视图，DataView 2 处）全部迁移完毕，`ElMessageBox.confirm` 在删除场景已无残留
+（仅剩 DataView 的导入/示例数据确认、AllocationView 的比例超限提示、AdminView 的禁用用户/重置密码等**非删除**确认）。
+
+**验证基线（B1 收尾）**：calc 114/114、API 43/43、构建零错误、`design/server/calc.js` 与实现逐字节一致；
+CDP E2E 对 10 处逐条走「取消 → 数据不变；确认 → 数据 −1 + 成功提示」，弹窗均为「删除确认 / 删除 / 取消」，**JS 异常 0**。
+> 注：DcaView 的删除按钮在资产被级联删除后消失 —— 首次全量 E2E 因前序用例先删了资产而漏测该视图；
+> 把 DcaView 提到删除类用例之前后复跑，**10/10 全过**。（E2E 脚本：`...\Temp\imv\b1-remove-e2e.js`）
+
