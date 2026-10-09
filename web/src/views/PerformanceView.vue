@@ -10,7 +10,7 @@
     <div class="kpi-row" style="grid-template-columns:repeat(5,1fr)">
       <div class="kpi"><div class="label">XIRR 年化</div><div class="val num" :class="signClass(perf.xirr)">{{ signedPct(perf.xirr) }}</div><div class="sub">资金加权，含每笔投入时点</div></div>
       <div class="kpi"><div class="label">TWR 时间加权</div><div class="val num" :class="signClass(perf.twr)">{{ signedPct(perf.twr) }}</div><div class="sub">剔除出入金影响</div></div>
-      <div class="kpi"><div class="label">简单年化</div><div class="val num" :class="signClass(perf.simpleAnnualized)">{{ signedPct(perf.simpleAnnualized) }}</div><div class="sub">累计收益 / 投入 / 持有天数×365</div></div>
+      <div class="kpi"><div class="label">简单年化</div><div class="val num" :class="signClass(perf.simpleAnnualized)">{{ signedPct(perf.simpleAnnualized) }}</div><div class="sub">累计收益率按持有天数折算年化（复利/几何）</div></div>
       <div class="kpi"><div class="label">累计收益率</div><div class="val num" :class="signClass(perf.cumulativeRate)">{{ signedPct(perf.cumulativeRate) }}</div><div class="sub">持有 {{ perf.holdingDays || 0 }} 天</div></div>
       <div class="kpi"><div class="label">基准 α</div><div class="val num" :class="signClass(alpha)">{{ signedPct(alpha) }}</div><div class="sub">组合 TWR − 基准涨跌</div></div>
     </div>
@@ -57,7 +57,7 @@
             <tr><td><b>XIRR</b></td><td>资金加权内部收益率，把每笔出入金与<b>期末可变现总值（持仓市值 + 现金）</b>作为现金流，按天精确年化，适合评估“我这笔钱赚得怎么样”。融资借款不构成外部投入，故不计入现金流</td></tr>
             <tr><td><b>TWR</b></td><td>时间加权收益率，按月末快照链式连乘，剔除出入金时点影响，适合评估投资能力本身</td></tr>
             <tr><td><b>α</b></td><td>组合 TWR 减去同期基准涨跌幅，正值表示跑赢基准</td></tr>
-            <tr><td><b>简单年化</b></td><td>累计收益率按持有天数线性年化，未考虑资金进出时点，仅作粗略参考</td></tr>
+            <tr><td><b>简单年化</b></td><td>把累计收益率按持有天数折算为<b>复利（几何）年化</b>，未考虑资金进出时点，仅作粗略参考。注意与 XIRR（考虑时点、资金加权）不同</td></tr>
           </tbody>
         </table>
       </div>
@@ -122,7 +122,8 @@ const cashOption = computed(() => {
       itemStyle: { color: f.kind === 'deposit' ? '#2b6cb0' : '#9aa6b2' },
     };
   });
-  const total = store.kpis.mv || 0;
+  /* 与引擎口径一致：XIRR 期末可变现总值 = 持仓市值 + 账户现金（此前只取市值，红点偏低） */
+  const total = (store.kpis.mv || 0) + (store.kpis.cash || 0);
   if (total) {
     points.push({ date: '当前', value: total, itemStyle: { color: '#e0463e' } });
   }

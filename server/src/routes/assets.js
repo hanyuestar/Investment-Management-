@@ -113,8 +113,8 @@ router.post('/', asyncHandler(async (req, res) => {
   if (typeof marginCNY === 'string') return badRequest(res, marginCNY);
   /* 融资额不得超过期初建仓成本（成本请填「自付 + 融资」的总额） */
   if (marginCNY > 0 && opening) {
-    const oCost = (+opening.costPrice > 0 && +opening.qty > 0)
-      ? +opening.costPrice * +opening.qty
+      const oCost = (+opening.price > 0 && +opening.qty > 0)   // parseOpening 返回 price（非 costPrice）
+        ? +opening.price * +opening.qty
       : (+opening.amount > 0 ? +opening.amount : 0);
     if (oCost > 0 && marginCNY > oCost + 1e-6) {
       return badRequest(res, `融资（¥${marginCNY}）不能超过期初建仓成本（¥${oCost.toFixed(2)}）—— 成本请填「自付 + 融资」的总额`);

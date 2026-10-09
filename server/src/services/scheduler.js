@@ -67,9 +67,15 @@ function jobDcaGenerate() {
     if (exists) continue;
     const asset = db.prepare('SELECT * FROM asset WHERE id=?').get(p.asset_id);
     const fx = asset && asset.currency === 'USD' ? fxService.currentFx(date) : 1;
-    db.prepare(`INSERT INTO event (user_id,asset_id,date,kind,side,amount,fee,fx,note,created_at)
-                VALUES (?,?,?, 'invest', NULL,?,0,?,? ,?)`)
-      .run(p.user_id, p.asset_id, date, p.amount, fx, p.note || '定投', now());
+    /* ⚠️ 必须与手动接口（routes/dcaPlans.js）一致地写入 qty/price：
+       只写 amount 会让引擎拿不到份额（tQty=0）→ 份额不增加、成本照常累加，
+       账面会把全部定投本金显示为浮动亏损。 */
+    const nav = asset && +asset.unit_price > 0 ? +asset.unit_price : 1;
+    const qty = +((+p.amount || 0) / nav).toFixed(6);
+    db.prepare(`INSERT INTO event
+                (user_id,asset_id,date,kind,side,qty,price,amount,ratio,fee,fx,is_t,note,created_at)
+                VALUES (?,?,?, 'invest', NULL,?,?,?,NULL,0,?,0,?,?)`)
+      .run(p.user_id, p.asset_id, date, qty, nav, p.amount, fx, p.note || '定投', now());
     count++;
   }
   if (count) console.log(`[cron] 定投生成：${count} 笔`);
