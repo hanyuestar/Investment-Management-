@@ -8,6 +8,7 @@
  * - 数据备份（每日 03:00，保留 30 天）
  */
 const cron = require('node-cron');
+const benchService = require('./benchmark');
 const { getDb, now } = require('../db');
 const { config } = require('../config');
 const fxService = require('./fx');
@@ -109,6 +110,17 @@ async function jobBackup() {
 }
 
 /** 判断今天是否本月最后一天 */
+/** 基准指数月末点位同步（仅已结束的月份，幂等不覆盖手工值） */
+async function jobSyncBenchmark() {
+  try {
+    const done = await benchService.syncAllUsersAllIndices();
+    const changed = done.filter(x => x.added || x.updated);
+    console.log(`[cron] 基准点位同步：${changed.length ? changed.map(x => `${x.code} +${x.added}/~${x.updated}`).join('、') : '无新增'}`);
+  } catch (e) {
+    console.warn(`[cron] 基准点位同步失败：${e.message}`);
+  }
+}
+
 function isLastDayOfMonth() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() === d.getDate();
@@ -125,6 +137,8 @@ function startScheduler() {
   cron.schedule('0 16 * * *', jobScanAlerts);
   // 每月最后一天 23:50 快照（每天 23:50 检查是否月末）
   cron.schedule('50 23 * * *', () => { if (isLastDayOfMonth()) jobMonthlySnapshot(); });
+  /* 每月最后一天 23:55 同步基准指数月末点位（排在月末快照之后） */
+  cron.schedule('55 23 * * *', () => { if (isLastDayOfMonth()) jobSyncBenchmark().catch(() => {}); });
 
   if (config.FX.syncOnStart) {
     jobSyncFx().catch(e => console.warn(`[startup] fx: ${e.message}`));

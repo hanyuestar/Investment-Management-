@@ -4,11 +4,34 @@ const express = require('express');
 const { getDb } = require('../db');
 const { authRequired } = require('../middleware/auth');
 const { asyncHandler, badRequest } = require('../middleware/helpers');
+const { adminRequired } = require('../middleware/auth');
+const benchService = require('../services/benchmark');
 
 const router = express.Router();
 router.use(authRequired);
 
 const mapRow = r => ({ id: String(r.id), code: r.code, date: r.date, value: r.value });
+
+/** 支持的基准指数列表（供前端下拉选择） */
+router.get('/indices', (req, res) => {
+  res.json({ default: benchService.DEFAULT_CODE, list: benchService.indexList() });
+});
+
+/**
+ * 自动同步基准点位（仅管理员）。
+ * - 自动补齐历史月末点位（只取已结束的月份，避免写入未走完的当月）
+ * - 幂等：已存在的月份默认跳过，不覆盖手工录入；body.overwrite=true 可强制覆盖
+ * body: { code?: 'CSI300', overwrite?: boolean, datalen?: number, months?: ['2026-09'] }
+ */
+router.post('/sync', adminRequired, asyncHandler(async (req, res) => {
+  const code = String(req.body?.code || benchService.DEFAULT_CODE).slice(0, 20);
+  const overwrite = !!req.body?.overwrite;
+  const datalen = req.body?.datalen;
+  const months = Array.isArray(req.body?.months) ? req.body.months.slice(0, 200) : undefined;
+  const r = await benchService.syncBenchmark(req.user.id, code, { overwrite, datalen, months });
+  if (!r.ok) return badRequest(res, r.error || '同步失败');
+  res.json(r);
+}));
 
 router.get('/', (req, res) => {
   const code = String(req.query.code || 'CSI300');

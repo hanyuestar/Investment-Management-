@@ -98,6 +98,9 @@ export const benchmarksApi = {
   list: (code = 'CSI300') => api.get(`/api/benchmarks?code=${code}`),
   save: (b) => api.post('/api/benchmarks', b),
   remove: (id) => api.del(`/api/benchmarks/${id}`),
+  /* 自动同步：补齐历史月末点位（仅管理员；只写已结束的月份，幂等不覆盖手工值） */
+  indices: () => api.get('/api/benchmarks/indices'),
+  sync: (b = {}) => api.post('/api/benchmarks/sync', b),
 };
 export const cashflowsApi = {
   list: (params = '') => api.get(`/api/cashflows${params}`),

@@ -498,6 +498,26 @@ test('删除账户级联删除其下资产与事件', async () => {
   assert.ok(after < before);
 });
 
+/* ---------------- 基准点位自动同步 ---------------- */
+test('基准点位：指数列表可查（7 个 A 股指数）', async () => {
+  const r = await api('GET', '/api/benchmarks/indices', aliceToken);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.default, 'CSI300');
+  const codes = r.json.list.map(x => x.code);
+  assert.ok(codes.includes('CSI300') && codes.includes('CSI500') && codes.includes('GEM'), codes.join(','));
+  assert.equal(codes.length, 7);
+});
+
+test('基准点位：普通用户调用自动同步返回 403', async () => {
+  const r = await api('POST', '/api/benchmarks/sync', aliceToken, { code: 'CSI300' });
+  assert.equal(r.status, 403);
+});
+
+test('基准点位：不支持的基准代码返回 400', async () => {
+  const r = await api('POST', '/api/benchmarks/sync', adminToken, { code: 'NOT_EXIST' });
+  assert.equal(r.status, 400);
+});
+
 /* ---------------- 期初建仓汇率（放在文件末尾：会写入历史汇率，避免干扰示例数据断言） ---------------- */
 test('期初建仓：非人民币资产按建仓日汇率折算成本（回归）', async () => {
   /* 历史缺陷：期初建仓事件的 fx 被硬编码为 1，

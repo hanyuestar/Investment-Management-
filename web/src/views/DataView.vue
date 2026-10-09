@@ -36,7 +36,12 @@
           <el-date-picker v-model="bench.date" type="month" value-format="YYYY-MM" placeholder="月份" size="small" style="width:130px" />
           <el-input-number v-model="bench.value" :min="0" :precision="2" size="small" controls-position="right" style="width:180px" placeholder="月末收盘点位" />
           <el-button size="small" type="primary" @click="saveBench">保存点位</el-button>
+          <el-button v-if="auth.isAdmin" size="small" :loading="syncing" @click="syncBench">自动同步</el-button>
         </div>
+        <p class="form-tip" v-if="auth.isAdmin" style="margin:-2px 0 8px">
+          自动同步会按<b>月末最后一个交易日的收盘点位</b>补齐历史（只写已结束的月份，幂等、不覆盖手工录入）；
+          每月最后一天 23:55 也会自动同步一次。当前同步基准：<b>{{ benchCode }}</b>（切换请到「设置」页）。
+        </p>
         <el-table :data="benchList" size="small" max-height="240" empty-text="暂无基准点位">
           <el-table-column prop="date" label="月份" width="120" />
           <el-table-column label="点位" align="right">
@@ -75,6 +80,7 @@
 import { reactive, ref, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { usePortfolioStore } from '../stores/portfolio';
+import { useAuthStore } from '../stores/auth';
 import { snapshotsApi, benchmarksApi, dataApi, getToken } from '../api';
 import { money, currentMonth } from '../utils/format';
 
@@ -82,6 +88,8 @@ const store = usePortfolioStore();
 const snap = reactive({ month: currentMonth(), total: null });
 
 /* 基准点位（带 id，独立加载以便删除） */
+const auth = useAuthStore();
+const syncing = ref(false);
 const benchCode = computed(() => store.settings?.benchmarkCode || 'CSI300');
 const benchList = ref([]);
 const bench = reactive({ date: currentMonth(), value: null });
@@ -89,6 +97,24 @@ async function loadBench() {
   try { benchList.value = await benchmarksApi.list(benchCode.value); } catch { benchList.value = []; }
 }
 onMounted(loadBench);
+async function syncBench() {
+  syncing.value = true;
+  try {
+    const r = await benchmarksApi.sync({ code: benchCode.value });
+    const parts = [];
+    if (r.added) parts.push(`新增 ${r.added} 个月`);
+    if (r.updated) parts.push(`更新 ${r.updated} 个月`);
+    if (r.skipped) parts.push(`跳过 ${r.skipped} 个已存在`);
+    ElMessage.success(`${r.name || benchCode.value} 同步完成：${parts.length ? parts.join('、') : '无变化'}` +
+      (r.latest ? `（最新 ${r.latest.date} 收 ${r.latest.value}）` : ''));
+    await loadBench();
+  } catch (e) {
+    ElMessage.error(e.message);
+  } finally {
+    syncing.value = false;
+  }
+}
+
 async function saveBench() {
   if (!bench.date || !(bench.value > 0)) return ElMessage.warning('请选择月份并填写点位');
   await benchmarksApi.save({ code: benchCode.value, date: bench.date, value: bench.value });
