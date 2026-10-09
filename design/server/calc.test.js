@@ -462,5 +462,32 @@ const near = (name, got, want, tol = 0.001) => {
   eq('融资 2 万时持仓市值仍为 25000', s2.mv, 25000, 0.01);
 }
 
+/* =========================================================
+ * 场景24 清仓后不得残留市值
+ * 历史缺陷：非股票资产在份额为 0 时回退取 asset.market_value（创建时的旧值），
+ * 导致已清仓仓位残留旧市值（实测残留 ¥0.01，并虚增浮动盈亏与总收益）。
+ * ========================================================= */
+{
+  console.log('\n— 场景24 清仓残留 —');
+  const mk = (events, over) => ({
+    fx: [{ date: '2024-01-01', rate: 1, source: 'manual' }], settings: {},
+    accounts: [{ id: 'A', kind: 'other', currency: 'CNY' }],
+    assets: [Object.assign({ id: 'F1', accountId: 'A', name: '基金', type: 'fund', currency: 'CNY' }, over || {})],
+    events, cashFlows: [], snapshots: [],
+  });
+  const OPEN = { assetId: 'F1', date: '2024-01-01', kind: 'opening', qty: 0.1, price: 7946.7, amount: 794.67, fee: 0, fx: 1 };
+  const REDEEM = { assetId: 'F1', date: '2026-01-01', kind: 'redeem', qty: 0.1, price: 0.1, fee: 0, fx: 1 };
+  const r1 = C.calcAsset(mk([OPEN, REDEEM], { unitPrice: 0.1, marketValue: 0.01 }).assets[0], mk([OPEN, REDEEM], { unitPrice: 0.1, marketValue: 0.01 }));
+  eq('清仓后份额 = 0', r1.qty, 0, 0.000001);
+  eq('清仓后市值 = 0（修复前残留 0.01）', r1.mvCNY, 0, 0.001);
+  eq('清仓后浮动盈亏 = 0', r1.unrealCNY, 0, 0.001);
+  /* 回归：从未按份额记账的历史资产仍应回退 market_value */
+  const S2 = mk([], { unitPrice: 0, marketValue: 3000 });
+  eq('金额口径历史资产仍取 marketValue', C.calcAsset(S2.assets[0], S2).mvCNY, 3000, 0.01);
+  /* 回归：正常持仓不受影响 */
+  const S3 = mk([{ assetId: 'F1', date: '2024-01-01', kind: 'invest', qty: 1000, price: 1, amount: 1000, fee: 0, fx: 1 }], { unitPrice: 1.2, marketValue: 0 });
+  eq('正常持仓市值 = 1000 × 1.2', C.calcAsset(S3.assets[0], S3).mvCNY, 1200, 0.01);
+}
+
 console.log(`\n===== 结果: ${pass} 通过, ${fail} 失败 =====`);
 process.exit(fail ? 1 : 0);

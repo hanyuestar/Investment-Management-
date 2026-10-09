@@ -62,9 +62,12 @@
    *  注意：股票不得走 unitPrice 分支 —— 数据库里股票的 unit_price 恒为 0，
    *  若用 `unitPrice != null` 判断会把市价误判为 0，导致市值归零。
    */
-  function unitPriceOf(a, qty) {
+  function unitPriceOf(a, qty, shareBased) {
     if (a.type === 'stock') return +a.price || 0;
     if (+a.unitPrice > 0) return +a.unitPrice;
+    /* 仅在「从未按份额记账」的历史资产上才回退到 market_value；
+       已清仓的份额型资产不应回退，否则会残留旧市值（如 ¥0.01）。 */
+    if (shareBased) return 0;
     return qty > 0 ? (+a.marketValue || 0) / qty : (+a.marketValue || 0);
   }
 
@@ -87,6 +90,7 @@
     let qty = 0;                         // 当前持仓份额
     let lots = [];                       // FIFO 批次: {q, price, fee, fx, date}
     let costLocal = 0, costCNY = 0;      // 当前持仓成本
+    let shareBased = false;              // 是否按份额记账过（用于区分「金额口径的历史资产」与「已清仓」）
     let openQty = 0, openCostCNY = 0;    // 期初建仓（份额 / 成本 ¥）
     let buyQty = 0, buyAmtCNY = 0, buyAmtLocal = 0;  // 累计买入/申购（**不含**期初建仓）
     let realLocal = 0, realCNY = 0;      // 已实现（卖出/赎回）
@@ -113,6 +117,7 @@
       const grossAmt = tQty > 0 ? tQty * tPrice : tAmtRaw;   // 成交金额（账户币种）
       const fee = t.fee || 0;
       feeTotalLocal += fee; feeTotalCNY += fee * f;   // 所有事件类型的手续费均计入
+      if (tQty > 0) shareBased = true;                // 出现份额即为份额型资产
 
       if (act === 'opening') {
         /* 期初建仓：记账开始前已持有的仓位。计入份额/成本/净投入，不产生现金流。 */
@@ -201,8 +206,12 @@
 
     const fxNow = assetFx(a, S);
     const cnyRate = (a.currency === 'USD' ? fxNow : 1);
-    const unitPx = unitPriceOf(a, qty);
-    const mvLocal = isStock ? qty * unitPx : (qty > 0 ? qty * unitPx : (+a.marketValue || 0));
+    const unitPx = unitPriceOf(a, qty, shareBased);
+    /* 清仓（份额为 0）时市值为 0；仅「从未按份额记账」的历史资产才回退到 market_value，
+       避免已清仓仓位残留旧市值（实测残留 ¥0.01） */
+    const mvLocal = isStock
+      ? qty * unitPx
+      : (qty > 0 ? qty * unitPx : (shareBased ? 0 : (+a.marketValue || 0)));
     const mvCNY = mvLocal * cnyRate;
     const unrealCNY = mvCNY - costCNY;
     const totalCNY = realCNY + divCNY + incomeCNY + unrealCNY;
