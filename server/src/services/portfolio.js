@@ -232,4 +232,5 @@ function rawState(userId) {
   };
 }
 
-module.exports = { computeAll, rawState, scope };
+/* scope 仅 computeAll 内部使用，不对外导出 */
+module.exports = { computeAll, rawState };

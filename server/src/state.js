@@ -117,4 +117,5 @@ function buildState(userId) {
 }
 
 
-module.exports = { buildState, getUserSettings, saveUserSettings, getUser, DEFAULT_SETTINGS };
+/* getUser / DEFAULT_SETTINGS 仅内部使用，不对外导出 */
+module.exports = { buildState, getUserSettings, saveUserSettings };

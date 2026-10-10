@@ -43,20 +43,13 @@ export const usePortfolioStore = defineStore('portfolio', {
       netDeposit: r.netDeposit || 0,
     })),
     benchmark: (s) => s.d?.benchmark || null,
-    // 以下各段均由 /api/compute 一次性返回
-    performance: (s) => s.d?.performance || {},
-    allocation: (s) => s.d?.allocation || { rows: [], total: 0, drift: 0, driftPct: 0 },
-    concentration: (s) => s.d?.concentration || { list: [], byType: {}, alerts: [] },
-    tax: (s) => s.d?.tax || { dividends: [], capGainRows: [], rules: {} },
-    reports: (s) => s.d?.reports || { months: [], years: [] },
-    cash: (s) => s.d?.cash || { cash: 0, deposit: 0, withdraw: 0, netDeposit: 0, openingCost: 0, effectiveInvest: 0 },
+    /* 视图统一经 store.d?.xxx 直取以下各段（performance/allocation/concentration/
+       tax/reports/cash），故不再设同名转发 getter（C2 收窄） */
     settings: (s) => s.raw.settings || s.d?.settings || null,
     assets: (s) => s.raw.assets,
     accounts: (s) => s.raw.accounts,
     events: (s) => s.raw.events,
-    fx: (s) => s.raw.fx,
     snapshots: (s) => s.raw.snapshots,
-    benchmarks: (s) => s.raw.benchmarks,
     cashFlows: (s) => s.raw.cashFlows,
     dcaPlans: (s) => s.raw.dcaPlans,
     accountName: (s) => (id) => {

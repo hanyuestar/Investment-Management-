@@ -17,13 +17,6 @@ router.get('/compute', (req, res) => {
   res.json(portfolio.computeAll(req.user.id, req.query.accountId));
 });
 
-router.get('/summary', (req, res) => {
-  const d = portfolio.computeAll(req.user.id, req.query.accountId);
-  res.json({
-    kpis: d.kpis, warnings: d.warnings || [], holdings: d.holdings, accounts: d.accounts, aggregation: d.aggregation, cash: d.cash,
-  });
-});
-
 router.get('/performance', (req, res) => {
   const d = portfolio.computeAll(req.user.id, req.query.accountId);
   res.json(d.performance);

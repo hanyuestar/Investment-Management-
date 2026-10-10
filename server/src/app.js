@@ -47,7 +47,7 @@ function createApp() {
   app.use('/api/dca-plans', dcaRoutes);
   app.use('/api/notifications', notificationRoutes);
   app.use('/api/admin', adminRoutes);
-  app.use('/api', computeRoutes);   // /api/state /api/compute /api/summary ...
+  app.use('/api', computeRoutes);   // /api/state /api/compute /api/performance ...
   app.use('/api', dataRoutes);      // /api/export /api/import /api/demo
 
   // 404（API）

@@ -172,9 +172,6 @@ CREATE INDEX IF NOT EXISTS idx_notification_user ON notification(user_id, is_rea
 function now() {
   return new Date().toISOString();
 }
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function init(dbPath) {
   ensureDirs();

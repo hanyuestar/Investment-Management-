@@ -12,7 +12,7 @@ export function setToken(t) {
   else localStorage.removeItem(TOKEN_KEY);
 }
 
-async function request(method, url, body, { raw = false } = {}) {
+async function request(method, url, body) {
   const headers = { Authorization: `Bearer ${getToken()}` };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   let res;
@@ -39,7 +39,7 @@ async function request(method, url, body, { raw = false } = {}) {
     }
     throw new Error(json?.error || `请求失败（${res.status}）`);
   }
-  return raw ? json : (json?.data !== undefined ? json.data : json);
+  return json?.data !== undefined ? json.data : json;
 }
 
 export const api = {
@@ -47,7 +47,6 @@ export const api = {
   post: (u, b) => request('POST', u, b || {}),
   put: (u, b) => request('PUT', u, b || {}),
   del: (u) => request('DELETE', u),
-  rawGet: (u) => request('GET', u, undefined, { raw: true }),
 };
 
 /* ---------- 鉴权 ---------- */
