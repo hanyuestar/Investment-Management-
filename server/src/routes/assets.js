@@ -20,6 +20,7 @@ function mapRow(a) {
     market: a.market || '', type: a.type, currency: a.currency,
     price: a.price || 0, marketValue: a.market_value || 0, unitPrice: a.unit_price || 0,
     marginCNY: a.margin_cny || 0,
+    priceSource: a.price_source || '', priceDate: a.price_date || '',
     alerts: a.alerts_json ? JSON.parse(a.alerts_json) : null,
     createdAt: a.created_at,
   };
@@ -177,8 +178,18 @@ router.put('/:id', asyncHandler(async (req, res) => {
     margin = m;
   }
 
-  getDb().prepare('UPDATE asset SET name=?,code=?,price=?,market_value=?,unit_price=?,margin_cny=?,alerts_json=? WHERE id=? AND user_id=?')
-    .run(name, code, price, mv, up, margin, alertsJson, row.id, req.user.id);
+  /* 用户手动改过价格/净值/市值 → 标记 manual：自动行情同步不再覆盖（「同步行情」按钮仍可强制刷新）。
+     按值比较判断（弹窗整体提交时改名/改预警不会误标）；手改后清空行情日期。 */
+  let priceSource = row.price_source || null;
+  let priceDate = row.price_date || null;
+  const priceTouched = row.type === 'stock'
+    ? (b.price !== undefined && Number(b.price) !== row.price)
+    : ((b.unitPrice !== undefined && Number(b.unitPrice) !== row.unit_price)
+     || (b.marketValue !== undefined && Number(b.marketValue) !== row.market_value));
+  if (priceTouched) { priceSource = 'manual'; priceDate = null; }
+
+  getDb().prepare('UPDATE asset SET name=?,code=?,price=?,market_value=?,unit_price=?,margin_cny=?,alerts_json=?,price_source=?,price_date=? WHERE id=? AND user_id=?')
+    .run(name, code, price, mv, up, margin, alertsJson, priceSource, priceDate, row.id, req.user.id);
   res.json(mapRow(ownedRow(getDb(), 'asset', row.id, req.user.id)));
 }));
 

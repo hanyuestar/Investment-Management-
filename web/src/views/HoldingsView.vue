@@ -6,6 +6,7 @@
         <div class="sub">按类型/关键词筛选；顶部账户选择器可切换账户视角</div>
       </div>
       <div class="actions">
+        <el-button :loading="syncing" @click="syncQuotes">同步行情</el-button>
         <el-button type="primary" @click="ops.createAsset()">新增资产</el-button>
       </div>
     </div>
@@ -39,9 +40,10 @@
 
 <script setup>
 import { ref, computed } from 'vue';
+import { ElMessage } from 'element-plus';
 import { Search } from '@element-plus/icons-vue';
 import { usePortfolioStore } from '../stores/portfolio';
-import { assetsApi } from '../api';
+import { assetsApi, quotesApi } from '../api';
 import AssetCard from '../components/AssetCard.vue';
 import OpsDialogs from '../components/OpsDialogs.vue';
 import { useRemoveConfirm } from '../composables/useRemoveConfirm';
@@ -50,6 +52,28 @@ const store = usePortfolioStore();
 const ops = ref(null);
 const typeFilter = ref('');
 const kw = ref('');
+const syncing = ref(false);
+
+/** 手动同步行情：按资产代码拉取最新单价（含手动维护的价格，force）；代码错误逐个提示 */
+async function syncQuotes() {
+  syncing.value = true;
+  try {
+    const r = await quotesApi.sync();
+    const parts = [];
+    if (r.updated.length) parts.push(`已更新 ${r.updated.length} 个标的`);
+    if (r.unchanged) parts.push(`${r.unchanged} 个无变化`);
+    const base = parts.length ? parts.join('，') : '没有可同步的标的（请先在资产里填写代码）';
+    const errs = r.errors || [];
+    if (!errs.length) {
+      ElMessage({ message: base + (r.updated.length ? '，盈亏已按新价重算' : ''), type: 'success' });
+    } else {
+      const detail = errs.slice(0, 2).map(e => `「${e.name}」(${e.code})`).join('、')
+        + (errs.length > 2 ? ` 等 ${errs.length} 个` : '');
+      ElMessage({ message: `${base}；${detail} 未能获取报价，请核对代码`, type: 'warning', duration: 6000 });
+    }
+    if (r.updated.length) await store.refreshAll();
+  } catch (e) { ElMessage.error(e.message); } finally { syncing.value = false; }
+}
 
 const filtered = computed(() => store.holdings.filter(h => {
   if (typeFilter.value && h.asset.type !== typeFilter.value) return false;

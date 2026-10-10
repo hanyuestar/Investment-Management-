@@ -9,6 +9,7 @@ const accountRoutes = require('./routes/accounts');
 const assetRoutes = require('./routes/assets');
 const eventRoutes = require('./routes/events');
 const fxRoutes = require('./routes/fx');
+const quoteRoutes = require('./routes/quotes');
 const snapshotRoutes = require('./routes/snapshots');
 const benchmarkRoutes = require('./routes/benchmarks');
 const cashFlowRoutes = require('./routes/cashflows');
@@ -41,6 +42,7 @@ function createApp() {
   app.use('/api/assets', assetRoutes);
   app.use('/api/events', eventRoutes);
   app.use('/api/fx', fxRoutes);
+  app.use('/api/quotes', quoteRoutes);
   app.use('/api/snapshots', snapshotRoutes);
   app.use('/api/benchmarks', benchmarkRoutes);
   app.use('/api/cashflows', cashFlowRoutes);

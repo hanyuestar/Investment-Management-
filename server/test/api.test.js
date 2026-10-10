@@ -568,3 +568,22 @@ test('导入含「期初建仓 fx=1」的旧备份时自动修正（非人民币
   /* 幂等：修正后不再满足 fx=1 判定，重复执行 0 笔 */
   assert.equal(fixOpeningFx().fixed, 0, '重复执行修正应为 0 笔');
 });
+
+/* ---------------- 行情同步：手改价格 → manual（自动同步跳过、手动按钮强刷） ---------------- */
+test('资产编辑：手改价格标记 manual，仅改名/改预警不标记', async () => {
+  const acc = await api('POST', '/api/accounts', adminToken, { name: '行情标记账户', kind: 'broker', currency: 'CNY' });
+  const a = await api('POST', '/api/assets', adminToken, {
+    name: '标记回归股', type: 'stock', market: 'CN', currency: 'CNY', accountId: acc.json.id, code: '600519', price: 1000,
+  });
+  assert.equal(a.json.priceSource, '', '新建资产默认可自动同步');
+
+  let r = await api('PUT', `/api/assets/${a.json.id}`, adminToken, { name: '标记回归股改名' });
+  assert.equal(r.json.priceSource, '', '仅改名不标记 manual');
+  assert.equal(r.json.name, '标记回归股改名');
+
+  r = await api('PUT', `/api/assets/${a.json.id}`, adminToken, { price: 1263 });
+  assert.equal(r.json.priceSource, 'manual', '改价 → manual，自动同步不再覆盖');
+  assert.equal(r.json.priceDate, '');
+
+  await api('DELETE', `/api/accounts/${acc.json.id}`, adminToken);
+});

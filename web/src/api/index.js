@@ -112,6 +112,10 @@ export const computeApi = {
   state: () => api.get('/api/state'),
   compute: (accountId = '') => api.get(`/api/compute${accountId ? `?accountId=${accountId}` : ''}`),
 };
+export const quotesApi = {
+  /* 行情同步：按资产代码拉取最新单价（股票→现价，基金→净值），引擎重算盈亏/市值 */
+  sync: () => api.post('/api/quotes/sync', {}),
+};
 export const dataApi = {
   exportUrl: '/api/export',
   import: (payload) => api.post('/api/import', payload),

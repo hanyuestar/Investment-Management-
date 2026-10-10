@@ -35,6 +35,12 @@ const config = {
     syncOnStart: String(process.env.FX_SYNC_ON_START || 'false').toLowerCase() === 'true',
   },
 
+  // 行情同步（按资产代码拉取最新单价；股票 15 分钟一次，基金每日收盘净值一次）
+  QUOTES: {
+    stockCron: process.env.QUOTES_STOCK_CRON || '*/15 * * * *',
+    fundCron: process.env.QUOTES_FUND_CRON || '5 21 * * *',
+  },
+
   SMTP: {
     host: process.env.SMTP_HOST || '',
     port: parseInt(process.env.SMTP_PORT || '465', 10),

@@ -9,6 +9,7 @@
  */
 const cron = require('node-cron');
 const benchService = require('./benchmark');
+const quotesService = require('./quotes');
 const { getDb, now } = require('../db');
 const { config } = require('../config');
 const fxService = require('./fx');
@@ -132,6 +133,27 @@ function isLastDayOfMonth() {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate() === d.getDate();
 }
 
+/**
+ * 行情同步：按资产代码拉取最新单价回写（股票→price，基金→unit_price）。
+ * 自动运行（force=false）跳过用户手动改过价格（price_source='manual'）的资产；
+ * 手动「同步行情」按钮走 POST /api/quotes/sync（force=true 强制刷新）。
+ * @param {string[]} kinds ['stock']（每 15 分钟）/ ['fund']（每日 21:05 收盘净值）
+ */
+async function jobSyncQuotes(kinds) {
+  const db = getDb();
+  try {
+    const r = await quotesService.syncAllUsers(db, { force: false, kinds });
+    const parts = [];
+    if (r.updated) parts.push(`更新 ${r.updated}`);
+    if (r.unchanged) parts.push(`无变化 ${r.unchanged}`);
+    if (r.skippedManual) parts.push(`跳过手动维护 ${r.skippedManual}`);
+    if (r.errors) parts.push(`失败 ${r.errors}`);
+    if (parts.length) console.log(`[cron] 行情同步(${kinds.join('/')}，${r.users} 用户)：${parts.join('，')}`);
+  } catch (e) {
+    console.warn(`[cron] 行情同步失败: ${e.message}`);
+  }
+}
+
 function startScheduler() {
   // 汇率同步
   cron.schedule(config.FX.syncCron, () => { jobSyncFx().catch(e => console.warn(`[cron] fx: ${e.message}`)); });
@@ -146,6 +168,11 @@ function startScheduler() {
   /* 每月最后一天 23:55 同步基准指数月末点位（排在月末快照之后） */
   cron.schedule('55 23 * * *', () => { if (isLastDayOfMonth()) jobSyncBenchmark().catch(() => {}); });
 
+  /* 行情同步：股票每 15 分钟一次；基金每日 21:05 一次（收盘净值公布后）。
+     休市/净值未更新时报价与现值一致 → 天然幂等空转。 */
+  cron.schedule(config.QUOTES.stockCron, () => { jobSyncQuotes(['stock']); });
+  cron.schedule(config.QUOTES.fundCron, () => { jobSyncQuotes(['fund']); });
+
   if (config.FX.syncOnStart) {
     jobSyncFx().catch(e => console.warn(`[startup] fx: ${e.message}`));
   }
@@ -153,5 +180,5 @@ function startScheduler() {
 }
 
 module.exports = {
-  startScheduler, jobSyncFx, jobMonthlySnapshot, jobDcaGenerate, jobScanAlerts, jobBackup,
+  startScheduler, jobSyncFx, jobMonthlySnapshot, jobDcaGenerate, jobScanAlerts, jobBackup, jobSyncQuotes,
 };

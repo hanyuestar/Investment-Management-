@@ -62,6 +62,8 @@ CREATE TABLE IF NOT EXISTS asset (
   market_value REAL NOT NULL DEFAULT 0,                -- 非股票当前市值（账户币种）
   unit_price   REAL NOT NULL DEFAULT 0,                -- 非股票单位净值/单价（账户币种；市值 = 份额 × 单位净值）
   margin_cny   REAL NOT NULL DEFAULT 0,                -- v7 创建该资产时已使用的融资（CNY，欠券商）
+  price_source TEXT,                                   -- 行情同步来源：auto=接口写入 / manual=用户手改（自动同步跳过）
+  price_date   TEXT,                                   -- 接口报价对应的行情日期（YYYY-MM-DD；手改为 NULL）
   alerts_json  TEXT,
   created_at   TEXT NOT NULL
 );
@@ -194,6 +196,8 @@ function addColumn(table, col, ddl) {
 function migrate() {
   addColumn('asset', 'unit_price', 'unit_price REAL NOT NULL DEFAULT 0');
   addColumn('asset', 'margin_cny', 'margin_cny REAL NOT NULL DEFAULT 0');
+  addColumn('asset', 'price_source', 'price_source TEXT');
+  addColumn('asset', 'price_date', 'price_date TEXT');
   addColumn('event', 'margin_cny', 'margin_cny REAL NOT NULL DEFAULT 0');
   addColumn('cash_flow', 'input_currency', 'input_currency TEXT');
   addColumn('cash_flow', 'input_amount', 'input_amount REAL');

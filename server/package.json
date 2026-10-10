@@ -11,7 +11,7 @@
     "dev": "node --watch src/server.js",
     "test:calc": "node test/calc.test.js",
     "test:api": "node --test test/api.test.js",
-    "test": "node test/calc.test.js && node --test test/api.test.js",
+    "test": "node test/calc.test.js && node --test test/api.test.js && node --test test/migrate.test.js && node --test test/quotes.test.js",
     "seed:demo": "node scripts/seed-demo.js"
   },
   "engines": {

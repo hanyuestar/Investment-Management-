@@ -27,7 +27,9 @@ services:
       - FX_FALLBACK_URL=${FX_FALLBACK_URL:-https://open.er-api.com/v6/latest/USD}
       - FX_SYNC_CRON=${FX_SYNC_CRON:-0 8 * * *}
       - FX_SYNC_ON_START=${FX_SYNC_ON_START:-false}
-      # 定时任务总开关（false 可关闭汇率同步/月末快照/基准点位同步/定投/预警/备份）
+      - QUOTES_STOCK_CRON=${QUOTES_STOCK_CRON:-*/15 * * * *}
+      - QUOTES_FUND_CRON=${QUOTES_FUND_CRON:-5 21 * * *}
+      # 定时任务总开关（false 可关闭汇率/行情同步、月末快照、基准点位、定投、预警、备份）
       - CRON_ENABLED=${CRON_ENABLED:-true}
       # 自动备份保留天数
       - BACKUP_KEEP_DAYS=${BACKUP_KEEP_DAYS:-30}
