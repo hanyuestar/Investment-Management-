@@ -203,3 +203,18 @@ CDP E2E 对 10 处逐条走「取消 → 数据不变；确认 → 数据 −1 +
 > 注：DcaView 的删除按钮在资产被级联删除后消失 —— 首次全量 E2E 因前序用例先删了资产而漏测该视图；
 > 把 DcaView 提到删除类用例之前后复跑，**10/10 全过**。（E2E 脚本：`...\Temp\imv\b1-remove-e2e.js`）
 
+---
+
+## 7. C2 补完与存量数据修正（随 v1.0.4 发布）
+
+| 项 | 提交 | 说明 |
+|---|---|---|
+| C2 第一批 | `cf6bd69` | calc.js 导出面收窄（8 符号，design 已同步）/ benchmark 死常量 / 前端 10 个零调用 API 封装 / 3 个未用 getter + `mutate` / format.js CCY_LABEL 私有化 |
+| 存量数据修正 | `b575bdb` | `fixOpeningFx()`：`kind='opening' 且 fx=1 且 币种≠CNY` → 按建仓日生效汇率重算（口径同 `currentFxRow`，兜底 7.1）。**启动迁移**（标记键 `schema_opening_fx_fix` 幂等）+ **`/api/import` 导入后就地修正**（响应新增 `fxFixed`）。新增 `test/migrate.test.js`（2/2，独立临时库模拟老库升级）与 api.test.js 导入用例 |
+| C2 补完 | `f0303b8` | 删死接口 `GET /api/summary`；删 `db.today()`；`state.getUser` / `DEFAULT_SETTINGS` / `portfolio.scope` 退回私有（实现保留）；store 补删 8 个未用转发 getter；auth 删 `isLoggedIn`；api 删 `rawGet` 及 `raw` 分支 |
+
+**C2 刻意保留**（供运维/回归使用，非死代码）：scheduler 各 job、mailer.sendMail、backup.pruneOldBackups、
+benchmark 纯函数导出、helpers.USERNAME_RE。**C1 / C3 按决策不处理**；compute.js 其余 8 个单用途接口全部保留。
+
+**验证**：calc 114/114、API **44/44**、migrate **2/2**、构建零错误；CDP 15 路由巡检 **15/15、JS 异常 0**。
+
