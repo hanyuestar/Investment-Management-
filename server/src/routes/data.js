@@ -1,7 +1,7 @@
 'use strict';
 /** 数据导出 / 导入（事务覆盖，导入前自动 JSON 备份）/ 示例数据装载 */
 const express = require('express');
-const { getDb, now } = require('../db');
+const { getDb, now, fixOpeningFx } = require('../db');
 const { authRequired } = require('../middleware/auth');
 const { asyncHandler, badRequest } = require('../middleware/helpers');
 const { writeJsonBackup } = require('../services/backup');
@@ -180,7 +180,11 @@ router.post('/import', asyncHandler(async (req, res) => {
   });
   tx();
 
-  res.json({ ok: true, counts, backupFile: backupFile.replace(/\\/g, '/').split('/').pop() });
+  /* 导入的若是在「期初建仓 fx 写死为 1」时期导出的备份，非人民币资产的期初成本仍会被低估
+     → 导入后就地按建仓日汇率修正（同一判定与口径，天然幂等） */
+  const fxFixed = fixOpeningFx().fixed;
+
+  res.json({ ok: true, counts, fxFixed, backupFile: backupFile.replace(/\\/g, '/').split('/').pop() });
 }));
 
 /* ---------- 装载示例数据（会先备份） ---------- */

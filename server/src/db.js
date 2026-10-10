@@ -206,6 +206,7 @@ function migrate() {
         input_amount   = amount
     WHERE input_currency IS NULL OR input_amount IS NULL`).run();
   migrateV5Caliber();
+  migrateOpeningFx();
 }
 
 /** 迁移标记键（写在 system_config，幂等） */
@@ -280,6 +281,58 @@ function migrateV5Caliber() {
   run();
 }
 
+/** 迁移标记键（写在 system_config，幂等） */
+const FX_FIX_KEY = 'schema_opening_fx_fix';
+
+/**
+ * 存量修正核心：期初建仓（opening）的 fx 曾被写死为 1，导致**非人民币资产**的期初成本
+ * 被按 1:1 折算（严重低估）。判定：`kind='opening' 且 fx=1 且 资产币种 ≠ CNY`。
+ * 修正口径与创建路径完全一致：`fx = 建仓日当天的生效汇率`（date<=建仓日 最近一条，
+ * 同日 manual 优先；无任何汇率记录时沿用内置兜底 7.1）。
+ * **无条件执行、天然幂等**：修正后不再满足 fx=1 条件，重复调用不会二次改写。
+ * 返回 { fixed, usedFallback, detail }，detail 保留 before→after 明细备查。
+ */
+function fixOpeningFx() {
+  const rows = db.prepare(`
+    SELECT e.id, e.date AS edate, e.fx, a.id AS aid, a.name AS aname, a.currency
+      FROM event e JOIN asset a ON a.id = e.asset_id
+     WHERE e.kind = 'opening' AND a.currency <> 'CNY' AND e.fx = 1
+     ORDER BY e.date, e.id`).all();
+  const detail = [];
+  let usedFallback = 0;
+  if (rows.length) {
+    const pickRate = db.prepare(`
+      SELECT rate, date FROM fx_rate
+       WHERE date <= ?
+       ORDER BY date DESC, CASE source WHEN 'manual' THEN 1 ELSE 0 END DESC, id DESC
+       LIMIT 1`);
+    const upd = db.prepare('UPDATE event SET fx=? WHERE id=?');
+    const run = db.transaction(() => {
+      for (const r of rows) {
+        const hit = pickRate.get(r.edate);
+        const rate = hit ? hit.rate : 7.1;        // 与 currentFxRow() 的兜底一致
+        if (!hit) usedFallback++;
+        upd.run(rate, r.id);
+        detail.push({ eventId: r.id, asset: r.aname, currency: r.currency,
+          date: r.edate, fx: { from: r.fx, to: rate }, rateDate: hit ? hit.date : null });
+      }
+    });
+    run();
+  }
+  return { fixed: detail.length, usedFallback, detail };
+}
+
+/** 启动迁移：修正后写标记，避免每次启动重复扫描/覆盖标记 */
+function migrateOpeningFx() {
+  if (getConfig(FX_FIX_KEY)) return;
+  const r = fixOpeningFx();
+  setConfig(FX_FIX_KEY, { at: now(), fixed: r.fixed, usedFallback: r.usedFallback, detail: r.detail });
+  if (r.fixed) {
+    console.log(`[migrate] 期初建仓汇率修正：${r.fixed} 笔` +
+      (r.usedFallback ? `（其中 ${r.usedFallback} 笔无建仓日前汇率记录，按内置兜底 7.1）` : ''));
+  }
+}
+
 function getDb() {
   if (!db) throw new Error('DB not initialized. Call init() first.');
   return db;
@@ -308,4 +361,4 @@ function setConfig(key, value) {
     .run(key, JSON.stringify(value), now());
 }
 
-module.exports = { init, getDb, now, today, getConfig, setConfig };
+module.exports = { init, getDb, now, getConfig, setConfig, fixOpeningFx };

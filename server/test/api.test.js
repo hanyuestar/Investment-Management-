@@ -548,3 +548,23 @@ test('期初建仓：非人民币资产按建仓日汇率折算成本（回归�
   await api('DELETE', `/api/accounts/${accId}`, adminToken);
   await api('DELETE', `/api/accounts/${acc2.json.id}`, adminToken);
 });
+
+/* ---------------- 存量修正：导入旧备份后就地修正期初建仓 fx ---------------- */
+test('导入含「期初建仓 fx=1」的旧备份时自动修正（非人民币资产）', async () => {
+  const payload = {
+    schema: 'invest-manager/v4',
+    accounts: [{ id: 90001, name: 'IBKR 导入回归', kind: 'broker', currency: 'USD' }],
+    assets: [{ id: 90002, account_id: 90001, name: '导入回归美股', type: 'stock', currency: 'USD' }],
+    events: [{ id: 90003, asset_id: 90002, date: '2026-01-02', kind: 'opening', qty: 100, price: 10, amount: 1000, fx: 1 }],
+  };
+  const imp = await api('POST', '/api/import', aliceToken, payload);
+  assert.equal(imp.status, 200);
+  assert.ok(imp.json.fxFixed >= 1, `应至少修正 1 笔，实得 ${imp.json.fxFixed}`);
+
+  const { getDb, fixOpeningFx } = require('../src/db');
+  const row = getDb().prepare('SELECT fx FROM event WHERE id = 90003').get();
+  assert.ok(row.fx > 1 && row.fx < 8, `期初 fx 应已修正为建仓日生效汇率，实得 ${row.fx}`);
+
+  /* 幂等：修正后不再满足 fx=1 判定，重复执行 0 笔 */
+  assert.equal(fixOpeningFx().fixed, 0, '重复执行修正应为 0 笔');
+});
